@@ -1,0 +1,1965 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Warehouse Handover Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap 5 -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+  />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- XLSX for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --primary-color: #145da0;
+      --primary-soft: #f0f6ff;
+      --accent-color: #f5a623;
+      --bg-color: #f4f5f7;
+    }
+
+    body {
+      background: var(--bg-color);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: row;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #0c2340;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1.25rem;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2e86de, #48dbfb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .sidebar-nav .nav-link {
+      color: #cbd5f5;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .sidebar-nav .nav-link.active,
+    .sidebar-nav .nav-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 0.8rem;
+      color: #9fb3ff;
+    }
+
+    .main-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1.5rem 2rem;
+      gap: 1rem;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      justify-content: space-between;
+    }
+
+    .top-bar-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .stat-card {
+      border-radius: 1rem;
+      border: 1px solid #e1e4eb;
+      background: #fff;
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .stat-trend {
+      font-size: 0.75rem;
+    }
+
+    .filters-card,
+    .table-card,
+    .chart-card {
+      border-radius: 1rem;
+      border: 1px solid #e1e4eb;
+      background: #fff;
+      padding: 1rem 1.1rem;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .table-responsive {
+      margin-top: 0.75rem;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    table thead th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      border-bottom-width: 1px;
+      background: #f9fafb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    table tbody td {
+      vertical-align: middle;
+      font-size: 0.9rem;
+    }
+
+    .status-badge {
+      border-radius: 999px;
+      padding: 0.15rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-pending {
+      background: #fff7ed;
+      color: #c05621;
+    }
+
+    .status-completed {
+      background: #ecfdf3;
+      color: #166534;
+    }
+
+    .status-delayed {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .status-inprogress {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    /* Allow manual resize of the Handover List card (only height) */
+    .table-card--resizable {
+      resize: vertical;
+      overflow: auto;
+      min-height: 220px;
+      max-height: 80vh;
+    }
+
+    @media (max-width: 992px) {
+      .app-shell {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .sidebar-nav {
+        display: flex;
+        flex-direction: row;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+
+      .main-panel {
+        padding: 1rem;
+      }
+
+      .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 576px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filters-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">WH</div>
+        <div>
+          <div class="fw-semibold">Warehouse</div>
+          <div style="font-size: 0.75rem; color: #9ca3af">
+            Handover Dashboard
+          </div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-link active" data-view="dashboard">
+          <i class="bi bi-grid"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-link" data-view="handovers">
+          <i class="bi bi-box-seam"></i>
+          <span>Handovers</span>
+        </a>
+        <a href="#" class="nav-link" data-view="warehouses">
+          <i class="bi bi-buildings"></i>
+          <span>Warehouses</span>
+        </a>
+        <a href="#" class="nav-link" data-view="admin-users">
+          <i class="bi bi-people"></i>
+          <span>Users (Admin)</span>
+        </a>
+        <a href="#" class="nav-link" data-view="reports">
+          <i class="bi bi-bar-chart-line"></i>
+          <span>Reports</span>
+        </a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      v1.0 – No login required
+    </div>
+  </aside>
+
+  <!-- Main Panel -->
+  <main class="main-panel">
+    <!-- DASHBOARD VIEW -->
+    <section class="view-section" data-view="dashboard">
+      <!-- Top bar -->
+      <div class="top-bar">
+        <div>
+          <div class="top-bar-title">Warehouse Handover Overview</div>
+          <div style="font-size: 0.85rem; color: #6b7280">
+            Track and manage handovers between warehouses in real time.
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-primary" id="btn-add-handover">
+            <i class="bi bi-plus-lg"></i> New Handover
+          </button>
+          <button class="btn btn-sm btn-success" id="btn-export-excel">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <section class="cards-grid">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="stat-label">Total Handovers</span>
+            <i class="bi bi-arrows-move"></i>
+          </div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-trend text-success" id="stat-total-note">
+            Updated automatically
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="stat-label">Pending</span>
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+          <div class="stat-value" id="stat-pending">0</div>
+          <div class="stat-trend text-warning" id="stat-pending-note">
+            Items awaiting confirmation
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="stat-label">Completed</span>
+            <i class="bi bi-check2-circle"></i>
+          </div>
+          <div class="stat-value text-success" id="stat-completed">0</div>
+          <div class="stat-trend text-success-emphasis" id="stat-completed-note">
+            Successfully handed over
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="stat-label">Delayed</span>
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+          <div class="stat-value text-danger" id="stat-delayed">0</div>
+          <div class="stat-trend text-danger-emphasis" id="stat-delayed-note">
+            Check issues and follow-up
+          </div>
+        </div>
+      </section>
+
+      <!-- Filters -->
+      <section class="filters-card mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Filters</h6>
+          <button class="btn btn-sm btn-link p-0" id="btn-reset-filters">
+            Reset filters
+          </button>
+        </div>
+        <div class="filters-grid">
+          <div>
+            <label class="form-label form-label-sm">From (Employee)</label>
+            <select id="filter-from" class="form-select form-select-sm">
+              <option value="">All</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label form-label-sm">To (Employee)</label>
+            <select id="filter-to" class="form-select form-select-sm">
+              <option value="">All</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label form-label-sm">Status</label>
+            <select id="filter-status" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option>Pending</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+              <option>Delayed</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label form-label-sm">Priority</label>
+            <select id="filter-priority" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option value="P1">P1 - High</option>
+              <option value="P2">P2 - Moderate</option>
+              <option value="P3">P3 - Low</option>
+              <option value="P4">P4 - Negligible</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label form-label-sm">Date From</label>
+            <input
+              type="date"
+              id="filter-date-from"
+              class="form-control form-control-sm"
+            />
+          </div>
+          <div>
+            <label class="form-label form-label-sm">Search</label>
+            <input
+              type="text"
+              id="filter-search"
+              class="form-control form-control-sm"
+              placeholder="Search by ID or item..."
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Table ONLY (full width, resizable) -->
+      <div class="row mt-2 g-3">
+        <div class="col-12">
+          <section class="table-card table-card--resizable">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">Handover List</h6>
+              <span
+                id="table-count"
+                style="font-size: 0.8rem; color: #6b7280"
+              ></span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                <tr>
+                  <th>HNDR ID</th>
+                  <th>FROM</th>
+                  <th>TO</th>
+                  <th>ITEMS</th>
+                  <th>PRIORITY</th>
+                  <th>STATUS</th>
+                  <th>DATE</th>
+                  <th>ACTION BY</th>
+                  <th>ATTACHMENT</th>
+                  <th style="width: 90px;">ACTIONS</th>
+                </tr>
+                </thead>
+                <tbody id="handover-tbody">
+                <!-- Rows rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- HANDOVERS VIEW: COMPLETED ONLY -->
+    <section class="view-section d-none" data-view="handovers">
+      <div class="top-bar mb-3">
+        <div>
+          <div class="top-bar-title">Completed Handovers</div>
+          <div style="font-size: 0.85rem; color: #6b7280">
+            All handovers that are currently marked as Completed.
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary" id="btn-add-handover-2">
+          <i class="bi bi-plus-lg"></i> New Handover
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Completed Handovers</h6>
+          <span id="completed-count" style="font-size: 0.8rem; color: #6b7280"></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+            <tr>
+              <th>HNDR ID</th>
+              <th>FROM</th>
+              <th>TO</th>
+              <th>ITEMS</th>
+              <th>PRIORITY</th>
+              <th>STATUS</th>
+              <th>DATE</th>
+              <th>ACTION BY</th>
+              <th>ATTACHMENT</th>
+              <th style="width: 90px;">ACTIONS</th>
+            </tr>
+            </thead>
+            <tbody id="completed-tbody">
+            <!-- completed rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- WAREHOUSES VIEW -->
+    <section class="view-section d-none" data-view="warehouses">
+      <div class="top-bar mb-3">
+        <div>
+          <div class="top-bar-title">Warehouses</div>
+          <div style="font-size: 0.85rem; color: #6b7280">
+            Manage and review all warehouses.
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card mb-3">
+        <h6>Warehouses List</h6>
+        <p class="text-muted mb-0">
+          Here you can later add a table for warehouses (name, location, capacity, status, etc.).
+        </p>
+      </div>
+
+      <div class="table-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Users / Employees</h6>
+        </div>
+        <form id="user-form" class="row g-2 mb-3">
+          <div class="col-md-4">
+            <input type="text" id="user-name" class="form-control" placeholder="Employee name" required />
+          </div>
+          <div class="col-md-3">
+            <input type="text" id="user-role" class="form-control" placeholder="Role (e.g. Manager)" />
+          </div>
+          <div class="col-md-3">
+            <input type="email" id="user-email" class="form-control" placeholder="Email address" />
+          </div>
+          <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">Add User</button>
+          </div>
+        </form>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Email</th>
+              <th style="width: 70px;">Actions</th>
+            </tr>
+            </thead>
+            <tbody id="users-tbody">
+            <!-- users rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN USERS VIEW -->
+    <section class="view-section d-none" data-view="admin-users">
+      <div class="top-bar mb-3">
+        <div>
+          <div class="top-bar-title">Users (Admin)</div>
+          <div style="font-size: 0.85rem; color: #6b7280">
+            Manage application accounts (username, role, and link to employees).  
+            No real passwords here yet – prototype only.
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">User Accounts</h6>
+          <button class="btn btn-sm btn-primary" id="btn-add-account">
+            <i class="bi bi-plus-lg"></i> Add Account
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>Username</th>
+              <th>Employee</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th style="width: 70px;">Actions</th>
+            </tr>
+            </thead>
+            <tbody id="accounts-tbody">
+            <!-- account rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTS VIEW -->
+    <section class="view-section d-none" data-view="reports">
+      <div class="top-bar mb-3">
+        <div>
+          <div class="top-bar-title">Reports & Analytics</div>
+          <div style="font-size: 0.85rem; color: #6b7280">
+            Summary reports and KPI analytics for your handovers.
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary" id="btn-import-json">
+            <i class="bi bi-upload"></i> Import JSON (Admin)
+          </button>
+
+          <button class="btn btn-sm btn-outline-secondary" id="btn-export-json">
+            <i class="bi bi-download"></i> Export JSON (Admin)
+          </button>
+
+          <input
+            type="file"
+            id="import-json-input"
+            accept="application/json"
+            hidden
+          />
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <div class="stat-card">
+            <span class="stat-label">Total Handovers</span>
+            <div class="stat-value" id="rep-total">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <span class="stat-label">Completed</span>
+            <div class="stat-value text-success" id="rep-completed">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <span class="stat-label">Pending</span>
+            <div class="stat-value text-warning" id="rep-pending">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <span class="stat-label">Delayed</span>
+            <div class="stat-value text-danger" id="rep-delayed">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="chart-card">
+            <h6>By Status (All Handovers)</h6>
+            <p class="text-muted mb-2">Bar chart using all records, independent of filters.</p>
+            <canvas id="reports-status-chart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="chart-card">
+            <h6>Handovers by User</h6>
+            <p class="text-muted mb-2">Number of handovers per Action By.</p>
+            <canvas id="reports-user-chart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal: New/Edit Handover -->
+<div
+  class="modal fade"
+  id="handover-modal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="handover-form">
+        <div class="modal-header">
+          <h5 class="modal-title" id="handover-modal-title">New Handover</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Handover ID</label>
+            <input
+              type="text"
+              class="form-control"
+              id="handover-id"
+              readonly
+            />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">From (Employee)</label>
+            <select class="form-select" id="handover-from" required>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">To (Employee)</label>
+            <select class="form-select" id="handover-to" required>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Items Description</label>
+            <input
+              type="text"
+              class="form-control"
+              id="handover-items"
+              placeholder="e.g. 150 cartons of product X"
+              required
+            />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Long Description</label>
+            <textarea
+              class="form-control"
+              id="handover-long-desc"
+              rows="3"
+              placeholder="Optional detailed notes about this handover (reason, transport, additional comments)"
+            ></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Priority Level</label>
+            <select class="form-select" id="handover-priority" required>
+              <option value="P1">P1 - High</option>
+              <option value="P2">P2 - Moderate</option>
+              <option value="P3">P3 - Low</option>
+              <option value="P4">P4 - Negligible</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="handover-status" required>
+              <option>Pending</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+              <option>Delayed</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" id="handover-date" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Action By</label>
+            <select class="form-select" id="handover-action-by" required>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Attachment (optional)</label>
+            <div id="current-attachment-info" class="small text-muted mb-1">
+              No attachment
+            </div>
+            <input type="file" class="form-control" id="handover-attachment" />
+            <div class="form-text">
+              You can attach any file (image, PDF, Word, Excel, email export, etc.).  
+              Note: very large files may not be saved due to browser storage limits.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-light"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit User -->
+<div
+  class="modal fade"
+  id="user-modal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="user-edit-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit User</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Name</label>
+            <input type="text" id="edit-user-name" class="form-control" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Role</label>
+            <input type="text" id="edit-user-role" class="form-control" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Email</label>
+            <input type="email" id="edit-user-email" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-light"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Save changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Admin User Account -->
+<div
+  class="modal fade"
+  id="account-modal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="account-form">
+        <div class="modal-header">
+          <h5 class="modal-title">User Account</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Username</label>
+            <input type="text" id="account-username" class="form-control" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Linked Employee (optional)</label>
+            <select id="account-employee" class="form-select">
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Role</label>
+            <select id="account-role" class="form-select">
+              <option>Admin</option>
+              <option>Supervisor</option>
+              <option>User</option>
+              <option>Viewer</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Status</label>
+            <select id="account-status" class="form-select">
+              <option value="Active">Active</option>
+              <option value="Disabled">Disabled</option>
+            </select>
+          </div>
+          <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
+            Passwords are not stored in this prototype.  
+            This page is only to design and plan user accounts.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-light"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Save account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
+
+  // ===== Data & Storage =====
+  const defaultUsers = [
+    { name: "Sameer Jabbar",       role: "Manager",    email: "sameer_jabbar@yahoo.com" },
+    { name: "Ardasher A. Ahmad",   role: "Supervisor", email: "" },
+  ];
+
+  const defaultHandovers = [
+    {
+      id: "HNDR-001",
+      from: "Sameer Jabbar",
+      to: "Ardasher A. Ahmad",
+      items: "120 cartons of Product A",
+      longDescription: "",
+      priority: "P1",
+      status: "Pending",
+      date: "2025-11-20",
+      actionBy: "Sameer Jabbar",
+      attachmentName: null,
+      attachmentType: null,
+      attachmentSize: null,
+      attachmentDataUrl: null,
+    },
+    {
+      id: "HNDR-002",
+      from: "Ardasher A. Ahmad",
+      to: "Sameer Jabbar",
+      items: "80 pallets of Product B",
+      longDescription: "",
+      priority: "P2",
+      status: "In Progress",
+      date: "2025-11-21",
+      actionBy: "Ardasher A. Ahmad",
+      attachmentName: null,
+      attachmentType: null,
+      attachmentSize: null,
+      attachmentDataUrl: null,
+    },
+  ];
+
+  const defaultAccounts = [
+    {
+      username: "admin",
+      employeeName: "Sameer Jabbar",
+      role: "Admin",
+      status: "Active",
+    },
+  ];
+
+  let handovers = [];
+  let filteredHandovers = [];
+  let users = [];
+  let accounts = [];
+
+  let reportsStatusChart = null;
+  let reportsUserChart = null;
+
+  let isEditMode = false;
+  let editingId = null;
+
+  let editingUserIndex = null;
+  let userModal, userEditForm, editUserNameInput, editUserRoleInput, editUserEmailInput;
+
+  let handoverModal;
+  let handoverForm;
+  let inputId, inputFrom, inputTo, inputItems, inputLongDesc, inputPriority,
+      inputStatus, inputDate, inputActionBy,
+      attachmentInput, currentAttachmentInfo, modalTitleEl;
+
+  // admin accounts modal
+  let accountModal, accountForm;
+  let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect;
+  let isEditAccount = false;
+  let editingAccountIndex = null;
+
+  // ===== LocalStorage helpers =====
+  function loadUsers() {
+    const saved = localStorage.getItem("warehouseUsers");
+    if (saved) {
+      try {
+        users = JSON.parse(saved);
+      } catch {
+        users = [...defaultUsers];
+      }
+    } else {
+      users = [...defaultUsers];
+    }
+  }
+
+  function saveUsers() {
+    localStorage.setItem("warehouseUsers", JSON.stringify(users));
+  }
+
+  function loadHandovers() {
+    const saved = localStorage.getItem("warehouseHandovers");
+    if (saved) {
+      try {
+        handovers = JSON.parse(saved);
+      } catch {
+        handovers = [...defaultHandovers];
+      }
+    } else {
+      handovers = [...defaultHandovers];
+    }
+    filteredHandovers = [...handovers];
+  }
+
+  function saveHandovers() {
+    localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
+  }
+
+  function loadAccounts() {
+    const saved = localStorage.getItem("warehouseAccounts");
+    if (saved) {
+      try {
+        accounts = JSON.parse(saved);
+      } catch {
+        accounts = [...defaultAccounts];
+      }
+    } else {
+      accounts = [...defaultAccounts];
+    }
+  }
+
+  function saveAccounts() {
+    localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
+  }
+
+  function generateNextId() {
+    if (handovers.length === 0) return "HNDR-001";
+    let maxNum = 0;
+    handovers.forEach((h) => {
+      const parts = String(h.id).split("-");
+      const num = parseInt(parts[1] || "0", 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    });
+    const next = maxNum + 1;
+    return "HNDR-" + String(next).padStart(3, "0");
+  }
+
+  function getStatusClass(status) {
+    switch (status) {
+      case "Pending":
+        return "status-badge status-pending";
+      case "Completed":
+        return "status-badge status-completed";
+      case "Delayed":
+        return "status-badge status-delayed";
+      case "In Progress":
+        return "status-badge status-inprogress";
+      default:
+        return "status-badge";
+    }
+  }
+
+  // ===== Dashboard table =====
+  function renderTable() {
+    const tbody = document.getElementById("handover-tbody");
+    tbody.innerHTML = "";
+
+    filteredHandovers.forEach((h) => {
+      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><span class="fw-semibold">${h.id}</span></td>
+        <td>${h.from}</td>
+        <td>${h.to}</td>
+        <td>${h.items}</td>
+        <td>${h.priority || "-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date}</td>
+        <td>${h.actionBy || ""}</td>
+        <td>
+          ${
+            linkUrl
+              ? `<a href="${linkUrl}"
+                     target="_blank"
+                     class="btn btn-sm btn-outline-primary"
+                     title="${h.attachmentName || "Attachment"}"
+                     download="${h.attachmentName || "attachment"}">
+                   <i class="bi bi-paperclip"></i>
+                 </a>`
+              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+          }
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
+            <i class="bi bi-check2"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("table-count").textContent =
+      filteredHandovers.length + " records";
+
+    renderCompletedTable();
+    attachRowActions();
+    updateStats();
+    renderReports(); // تحديث التقارير بعد أي تغيير
+  }
+
+  function renderCompletedTable() {
+    const tbody = document.getElementById("completed-tbody");
+    const countEl = document.getElementById("completed-count");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    const completed = handovers.filter((h) => h.status === "Completed");
+
+    completed.forEach((h) => {
+      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><span class="fw-semibold">${h.id}</span></td>
+        <td>${h.from}</td>
+        <td>${h.to}</td>
+        <td>${h.items}</td>
+        <td>${h.priority || "-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date}</td>
+        <td>${h.actionBy || ""}</td>
+        <td>
+          ${
+            linkUrl
+              ? `<a href="${linkUrl}"
+                     target="_blank"
+                     class="btn btn-sm btn-outline-primary"
+                     title="${h.attachmentName || "Attachment"}"
+                     download="${h.attachmentName || "attachment"}">
+                   <i class="bi bi-paperclip"></i>
+                 </a>`
+              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+          }
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
+            <i class="bi bi-eye"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (countEl) {
+      countEl.textContent = completed.length + " records";
+    }
+  }
+
+  function attachRowActions() {
+    document.querySelectorAll(".btn-view").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        openEditHandover(id);
+      });
+    });
+
+    document.querySelectorAll(".btn-complete").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const h = handovers.find((x) => x.id === id);
+        if (!h) return;
+        h.status = "Completed";
+        saveHandovers();
+        applyFilters();
+      });
+    });
+  }
+
+  function applyFilters() {
+    const from = document.getElementById("filter-from").value;
+    const to = document.getElementById("filter-to").value;
+    const status = document.getElementById("filter-status").value;
+    const priority = document.getElementById("filter-priority").value;
+    const dateFrom = document.getElementById("filter-date-from").value;
+    const search = document
+      .getElementById("filter-search")
+      .value.toLowerCase();
+
+    filteredHandovers = handovers.filter((h) => {
+      let ok = true;
+
+      if (from && h.from !== from) ok = false;
+      if (to && h.to !== to) ok = false;
+      if (status && h.status !== status) ok = false;
+      if (priority && h.priority !== priority) ok = false;
+      if (dateFrom && h.date < dateFrom) ok = false;
+
+      if (search) {
+        const text =
+          (h.id + " " + h.items + " " + h.from + " " + h.to).toLowerCase();
+        if (!text.includes(search)) ok = false;
+      }
+
+      return ok;
+    });
+
+    renderTable();
+  }
+
+  function resetFilters() {
+    document.getElementById("filter-from").value = "";
+    document.getElementById("filter-to").value = "";
+    document.getElementById("filter-status").value = "";
+    document.getElementById("filter-priority").value = "";
+    document.getElementById("filter-date-from").value = "";
+    document.getElementById("filter-search").value = "";
+    filteredHandovers = [...handovers];
+    renderTable();
+  }
+
+  function updateStats() {
+    const total = filteredHandovers.length;
+    const pending = filteredHandovers.filter((h) => h.status === "Pending").length;
+    const completed = filteredHandovers.filter((h) => h.status === "Completed").length;
+    const delayed = filteredHandovers.filter((h) => h.status === "Delayed").length;
+
+    document.getElementById("stat-total").textContent = total;
+    document.getElementById("stat-pending").textContent = pending;
+    document.getElementById("stat-completed").textContent = completed;
+    document.getElementById("stat-delayed").textContent = delayed;
+  }
+
+  // ===== Reports (By Status + By User based on ALL handovers) =====
+  function renderReports() {
+    const total = handovers.length;
+    const pending = handovers.filter(h => h.status === "Pending").length;
+    const completed = handovers.filter(h => h.status === "Completed").length;
+    const delayed = handovers.filter(h => h.status === "Delayed").length;
+    const inProgress = handovers.filter(h => h.status === "In Progress").length;
+
+    const repTotal = document.getElementById("rep-total");
+    if (!repTotal) return; // لو صفحة التقارير غير محملة
+
+    document.getElementById("rep-total").textContent = total;
+    document.getElementById("rep-pending").textContent = pending;
+    document.getElementById("rep-completed").textContent = completed;
+    document.getElementById("rep-delayed").textContent = delayed;
+
+    const statusCanvas = document.getElementById("reports-status-chart");
+    const userCanvas = document.getElementById("reports-user-chart");
+    if (!statusCanvas || !userCanvas) return;
+
+    // --- By Status (bar chart, all data) ---
+    if (reportsStatusChart) reportsStatusChart.destroy();
+    reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: ["Pending", "In Progress", "Completed", "Delayed"],
+        datasets: [
+          {
+            label: "Handovers",
+            data: [pending, inProgress, completed, delayed],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 11 } },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 },
+          },
+        },
+      },
+    });
+
+    // --- By User ---
+    const byUser = {};
+    handovers.forEach(h => {
+      const key = h.actionBy || "Unknown";
+      byUser[key] = (byUser[key] || 0) + 1;
+    });
+
+    const userLabels = Object.keys(byUser);
+    const userData = Object.values(byUser);
+
+    if (reportsUserChart) reportsUserChart.destroy();
+    reportsUserChart = new Chart(userCanvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: userLabels,
+        datasets: [
+          {
+            label: "Handovers",
+            data: userData,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 11 } },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 },
+          },
+        },
+      },
+    });
+  }
+
+  // ===== Excel Export for Handover List =====
+  function exportHandoverExcel() {
+    // use filteredHandovers so التصدير يحترم الفلتر الحالي
+    const data = filteredHandovers.map(h => ({
+      "HNDR ID": h.id,
+      "From": h.from,
+      "To": h.to,
+      "Items": h.items,
+      "Long Description": h.longDescription || "",
+      "Priority": h.priority,
+      "Status": h.status,
+      "Date": h.date,
+      "Action By": h.actionBy || "",
+      "Attachment Name": h.attachmentName || "None",
+      "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
+    }));
+
+    if (data.length === 0) {
+      alert("No records to export.");
+      return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Handover List");
+    XLSX.writeFile(wb, "Handover_List.xlsx");
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setSelectOptions(select, values, includeEmpty, emptyLabel) {
+    const current = select.value;
+    select.innerHTML = "";
+    if (includeEmpty) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = emptyLabel || "All";
+      select.appendChild(opt);
+    }
+    values.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+    if (current && values.includes(current)) {
+      select.value = current;
+    }
+  }
+
+  function refreshUserSelectOptions() {
+    const names = users.map((u) => u.name);
+
+    const filterFrom = document.getElementById("filter-from");
+    const filterTo = document.getElementById("filter-to");
+    setSelectOptions(filterFrom, names, true, "All");
+    setSelectOptions(filterTo, names, true, "All");
+
+    if (inputFrom && inputTo && inputActionBy) {
+      setSelectOptions(inputFrom, names, false);
+      setSelectOptions(inputTo, names, false);
+      setSelectOptions(inputActionBy, names, false);
+    }
+
+    // update employee list in account modal
+    fillAccountEmployeeOptions();
+  }
+
+  // ===== Handover Modal =====
+  function initHandoverModal() {
+    const modalEl = document.getElementById("handover-modal");
+    handoverModal = new bootstrap.Modal(modalEl);
+    handoverForm = document.getElementById("handover-form");
+    modalTitleEl = document.getElementById("handover-modal-title");
+
+    inputId = document.getElementById("handover-id");
+    inputFrom = document.getElementById("handover-from");
+    inputTo = document.getElementById("handover-to");
+    inputItems = document.getElementById("handover-items");
+    inputLongDesc = document.getElementById("handover-long-desc");
+    inputPriority = document.getElementById("handover-priority");
+    inputStatus = document.getElementById("handover-status");
+    inputDate = document.getElementById("handover-date");
+    inputActionBy = document.getElementById("handover-action-by");
+    attachmentInput = document.getElementById("handover-attachment");
+    currentAttachmentInfo = document.getElementById("current-attachment-info");
+
+    refreshUserSelectOptions();
+
+    const openButtons = [
+      document.getElementById("btn-add-handover"),
+      document.getElementById("btn-add-handover-2"),
+    ].filter(Boolean);
+
+    openButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        isEditMode = false;
+        editingId = null;
+        handoverForm.reset();
+        inputId.value = generateNextId();
+        inputDate.value = new Date().toISOString().slice(0, 10);
+        currentAttachmentInfo.textContent = "No attachment";
+        attachmentInput.value = "";
+        inputLongDesc.value = "";
+        inputPriority.value = "P3";
+
+        if (users.length > 0) {
+          inputFrom.value = users[0].name;
+          inputTo.value = users[0].name;
+          inputActionBy.value = users[0].name;
+        }
+
+        modalTitleEl.textContent = "New Handover";
+        handoverModal.show();
+      });
+    });
+
+    handoverForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const from = inputFrom.value;
+      const to = inputTo.value;
+      const items = inputItems.value;
+      const longDescription = inputLongDesc.value;
+      const priority = inputPriority.value;
+      const status = inputStatus.value;
+      const date = inputDate.value;
+      const actionBy = inputActionBy.value;
+      const file = attachmentInput.files[0] || null;
+
+      let attachmentName = null;
+      let attachmentType = null;
+      let attachmentSize = null;
+      let attachmentDataUrl = null;
+
+      if (isEditMode) {
+        const current = handovers.find((h) => h.id === editingId);
+        if (current) {
+          attachmentName = current.attachmentName || null;
+          attachmentType = current.attachmentType || null;
+          attachmentSize = current.attachmentSize || null;
+          attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
+        }
+      }
+
+      if (file) {
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+          alert("Attachment is too large to save in the browser (max ~3MB). Please attach a smaller file.");
+          return;
+        }
+        attachmentName = file.name;
+        attachmentType = file.type || null;
+        attachmentSize = file.size;
+        attachmentDataUrl = await readFileAsDataUrl(file);
+      }
+
+      if (isEditMode) {
+        const idx = handovers.findIndex((h) => h.id === editingId);
+        if (idx === -1) return;
+        handovers[idx] = {
+          ...handovers[idx],
+          from,
+          to,
+          items,
+          longDescription,
+          priority,
+          status,
+          date,
+          actionBy,
+          attachmentName,
+          attachmentType,
+          attachmentSize,
+          attachmentDataUrl,
+        };
+      } else {
+        const id = inputId.value;
+        handovers.push({
+          id,
+          from,
+          to,
+          items,
+          longDescription,
+          priority,
+          status,
+          date,
+          actionBy,
+          attachmentName,
+          attachmentType,
+          attachmentSize,
+          attachmentDataUrl,
+        });
+      }
+
+      saveHandovers();
+      applyFilters();
+      handoverModal.hide();
+      attachmentInput.value = "";
+    });
+  }
+
+  function openEditHandover(id) {
+    const h = handovers.find((x) => x.id === id);
+    if (!h) return;
+
+    isEditMode = true;
+    editingId = id;
+
+    handoverForm.reset();
+
+    refreshUserSelectOptions();
+
+    inputId.value = h.id;
+    inputFrom.value = h.from;
+    inputTo.value = h.to;
+    inputItems.value = h.items;
+    inputLongDesc.value = h.longDescription || "";
+    inputPriority.value = h.priority || "P3";
+    inputStatus.value = h.status;
+    inputDate.value = h.date;
+    inputActionBy.value = h.actionBy || (users[0] ? users[0].name : "");
+    attachmentInput.value = "";
+
+    if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
+      currentAttachmentInfo.textContent =
+        "Current attachment: " +
+        h.attachmentName +
+        (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
+    } else {
+      currentAttachmentInfo.textContent = "No attachment";
+    }
+
+    modalTitleEl.textContent = "Edit Handover";
+    handoverModal.show();
+  }
+
+  // ===== Sidebar navigation =====
+  function setActiveView(view, save = true) {
+    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
+    const views = document.querySelectorAll(".view-section");
+
+    navLinks.forEach((link) => {
+      const v = link.getAttribute("data-view");
+      if (v === view) {
+        link.classList.add("active");
+      } else {
+        link.classList.remove("active");
+      }
+    });
+
+    views.forEach((section) => {
+      const v = section.getAttribute("data-view");
+      if (v === view) {
+        section.classList.remove("d-none");
+      } else {
+        section.classList.add("d-none");
+      }
+    });
+
+    if (save) {
+      localStorage.setItem("warehouseActiveView", view);
+    }
+  }
+
+  function initSidebarNavigation() {
+    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
+    navLinks.forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const view = link.getAttribute("data-view");
+        if (!view) return;
+        setActiveView(view, true);
+      });
+    });
+  }
+
+  // ===== Users (employees) =====
+  function renderUsers() {
+    const tbody = document.getElementById("users-tbody");
+    tbody.innerHTML = "";
+    users.forEach((u, index) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${u.name}</td>
+        <td>${u.role || ""}</td>
+        <td>${u.email || ""}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary btn-edit-user" data-index="${index}">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    attachUserRowActions();
+  }
+
+  function attachUserRowActions() {
+    document.querySelectorAll(".btn-edit-user").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-index"), 10);
+        openEditUser(idx);
+      });
+    });
+  }
+
+  function initUserForm() {
+    const form = document.getElementById("user-form");
+    const nameInput = document.getElementById("user-name");
+    const roleInput = document.getElementById("user-role");
+    const emailInput = document.getElementById("user-email");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const role = roleInput.value.trim();
+      const email = emailInput.value.trim();
+      if (!name) return;
+      users.push({ name, role, email });
+      saveUsers();
+      renderUsers();
+      refreshUserSelectOptions();
+      nameInput.value = "";
+      roleInput.value = "";
+      emailInput.value = "";
+    });
+  }
+
+  function initUserModal() {
+    const modalEl = document.getElementById("user-modal");
+    userModal = new bootstrap.Modal(modalEl);
+    userEditForm = document.getElementById("user-edit-form");
+    editUserNameInput = document.getElementById("edit-user-name");
+    editUserRoleInput = document.getElementById("edit-user-role");
+    editUserEmailInput = document.getElementById("edit-user-email");
+
+    userEditForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (editingUserIndex === null) return;
+      const name = editUserNameInput.value.trim();
+      const role = editUserRoleInput.value.trim();
+      const email = editUserEmailInput.value.trim();
+      if (!name) return;
+      users[editingUserIndex] = { name, role, email };
+      saveUsers();
+      renderUsers();
+      refreshUserSelectOptions();
+      userModal.hide();
+    });
+  }
+
+  function openEditUser(index) {
+    const u = users[index];
+    if (!u) return;
+    editingUserIndex = index;
+    editUserNameInput.value = u.name;
+    editUserRoleInput.value = u.role || "";
+    editUserEmailInput.value = u.email || "";
+    userModal.show();
+  }
+
+  // ===== Admin Accounts =====
+  function renderAccounts() {
+    const tbody = document.getElementById("accounts-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    accounts.forEach((acc, index) => {
+      const tr = document.createElement("tr");
+      const badgeClass =
+        acc.status === "Disabled"
+          ? "bg-secondary-subtle text-secondary"
+          : "bg-success-subtle text-success";
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${acc.username}</td>
+        <td>${acc.employeeName || "-"}</td>
+        <td>${acc.role || ""}</td>
+        <td>
+          <span class="badge rounded-pill ${badgeClass}">
+            ${acc.status || "Active"}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${index}">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    attachAccountRowActions();
+  }
+
+  function attachAccountRowActions() {
+    document.querySelectorAll(".btn-edit-account").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-index"), 10);
+        openEditAccount(idx);
+      });
+    });
+  }
+
+  function fillAccountEmployeeOptions() {
+    if (!accountEmployeeSelect) return;
+    accountEmployeeSelect.innerHTML = "";
+    const optNone = document.createElement("option");
+    optNone.value = "";
+    optNone.textContent = "(No linked employee)";
+    accountEmployeeSelect.appendChild(optNone);
+
+    users.forEach((u) => {
+      const opt = document.createElement("option");
+      opt.value = u.name;
+      opt.textContent = u.name;
+      accountEmployeeSelect.appendChild(opt);
+    });
+  }
+
+  function initAccountModal() {
+    const modalEl = document.getElementById("account-modal");
+    accountModal = new bootstrap.Modal(modalEl);
+    accountForm = document.getElementById("account-form");
+    accountUsernameInput = document.getElementById("account-username");
+    accountEmployeeSelect = document.getElementById("account-employee");
+    accountRoleSelect = document.getElementById("account-role");
+    accountStatusSelect = document.getElementById("account-status");
+
+    fillAccountEmployeeOptions();
+
+    const btnAdd = document.getElementById("btn-add-account");
+    if (btnAdd) {
+      btnAdd.addEventListener("click", () => {
+        isEditAccount = false;
+        editingAccountIndex = null;
+        accountForm.reset();
+        fillAccountEmployeeOptions();
+        accountStatusSelect.value = "Active";
+        accountModal.show();
+      });
+    }
+
+    accountForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = accountUsernameInput.value.trim();
+      const employeeName = accountEmployeeSelect.value || "";
+      const role = accountRoleSelect.value || "User";
+      const status = accountStatusSelect.value || "Active";
+      if (!username) return;
+
+      if (isEditAccount && editingAccountIndex !== null) {
+        accounts[editingAccountIndex] = { username, employeeName, role, status };
+      } else {
+        accounts.push({ username, employeeName, role, status });
+      }
+      saveAccounts();
+      renderAccounts();
+      accountModal.hide();
+    });
+  }
+
+  function openEditAccount(index) {
+    const acc = accounts[index];
+    if (!acc) return;
+    isEditAccount = true;
+    editingAccountIndex = index;
+    fillAccountEmployeeOptions();
+    accountUsernameInput.value = acc.username;
+    accountEmployeeSelect.value = acc.employeeName || "";
+    accountRoleSelect.value = acc.role || "User";
+    accountStatusSelect.value = acc.status || "Active";
+    accountModal.show();
+  }
+
+  // ===== Export JSON =====
+  function initExportJson() {
+    const btn = document.getElementById("btn-export-json");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const data = {
+        exportedAt: new Date().toISOString(),
+        handovers,
+        users,
+        accounts,
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `warehouse-data-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // ===== Import JSON =====
+  function initImportJson() {
+    const btn = document.getElementById("btn-import-json");
+    const input = document.getElementById("import-json-input");
+    if (!btn || !input) return;
+
+    btn.addEventListener("click", () => {
+      input.click();
+    });
+
+    input.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (
+          !data ||
+          !Array.isArray(data.handovers) ||
+          !Array.isArray(data.users) ||
+          !Array.isArray(data.accounts)
+        ) {
+          alert(
+            "Invalid JSON structure.\nThe file must contain: handovers, users, and accounts arrays."
+          );
+          input.value = "";
+          return;
+        }
+
+        const ok = confirm(
+          "This will replace all current data (handovers, users, accounts) in this browser with the data from the file.\nDo you want to continue?"
+        );
+        if (!ok) {
+          input.value = "";
+          return;
+        }
+
+        handovers = data.handovers;
+        users = data.users;
+        accounts = data.accounts;
+
+        saveHandovers();
+        saveUsers();
+        saveAccounts();
+
+        filteredHandovers = [...handovers];
+
+        renderUsers();
+        refreshUserSelectOptions();
+        renderTable();
+        renderAccounts();
+        renderReports();
+
+        alert("Data imported successfully.");
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred while reading or parsing the JSON file.");
+      } finally {
+        input.value = "";
+      }
+    });
+  }
+
+  // ===== DOMContentLoaded =====
+  document.addEventListener("DOMContentLoaded", () => {
+    // Filters events
+    document
+      .getElementById("filter-from")
+      .addEventListener("change", applyFilters);
+    document
+      .getElementById("filter-to")
+      .addEventListener("change", applyFilters);
+    document
+      .getElementById("filter-status")
+      .addEventListener("change", applyFilters);
+    document
+      .getElementById("filter-priority")
+      .addEventListener("change", applyFilters);
+    document
+      .getElementById("filter-date-from")
+      .addEventListener("change", applyFilters);
+    document
+      .getElementById("filter-search")
+      .addEventListener("input", applyFilters);
+
+    document
+      .getElementById("btn-reset-filters")
+      .addEventListener("click", resetFilters);
+
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) {
+      btnExcel.addEventListener("click", exportHandoverExcel);
+    }
+
+    loadUsers();
+    loadHandovers();
+    loadAccounts();
+
+    initSidebarNavigation();
+    initUserForm();
+    initUserModal();
+    renderUsers();
+
+    initHandoverModal();
+    initAccountModal();
+
+    refreshUserSelectOptions();
+    renderTable();
+    renderAccounts();
+    initExportJson();
+    initImportJson();
+    renderReports();
+
+    const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
+    setActiveView(savedView, false);
+  });
+</script>
+</body>
+</html>
