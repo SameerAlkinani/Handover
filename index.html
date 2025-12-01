@@ -729,7 +729,7 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h6>By Status (Visible Handovers)</h6>
-            <p class="text-muted mb-2">For Admin/Supervisor: all handovers. For others: only own handovers.</p>
+            <p class="text-muted mb-2">For Admin/Supervisor: all handovers. For others: only own / assigned handovers.</p>
             <canvas id="reports-status-chart" height="220"></canvas>
           </div>
         </div>
@@ -1159,18 +1159,25 @@
     return accounts.find(acc => acc.username === username) || null;
   }
 
-  // Handovers visible to current logged-in user
+  // ===== Visibility Logic =====
+  // Admin & Supervisor: كل الهاندوفر
+  // User / Viewer: الهاندوفر التي يكون فيها (Action By = اسمه) أو (To = اسمه)
   function getVisibleHandovers() {
     const acc = getLoggedInAccount();
-    if (!acc) return handovers;
+    if (!acc) return [];
 
     if (acc.role === "Admin" || acc.role === "Supervisor") {
       return handovers;
     }
 
-    const empName = acc.employeeName || "";
+    const empName = acc.employeeName?.trim() || "";
     if (!empName) return [];
-    return handovers.filter(h => h.actionBy === empName);
+
+    return handovers.filter(h => {
+      const actionByName = (h.actionBy || "").trim();
+      const toName = (h.to || "").trim();
+      return actionByName === empName || toName === empName;
+    });
   }
 
   function canEditHandover(h) {
