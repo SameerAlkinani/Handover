@@ -154,10 +154,10 @@
       padding: 1rem 1.1rem;
     }
 
-    /* Filters row: 6 columns on desktop */
+    /* Filters row: 7 columns on desktop (one line) */
     .filters-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 0.75rem;
       align-items: end;
     }
@@ -325,6 +325,11 @@
           </div>
         </div>
         <div class="d-flex align-items-center gap-2">
+          <!-- Active platform user selector -->
+          <div class="d-flex align-items-center gap-1">
+            <span style="font-size:0.8rem;color:#6b7280;">User:</span>
+            <select id="active-account-select" class="form-select form-select-sm" style="width: 180px;"></select>
+          </div>
           <button class="btn btn-sm btn-primary" id="btn-add-handover">
             <i class="bi bi-plus-lg"></i> New Handover
           </button>
@@ -424,6 +429,14 @@
             <input
               type="date"
               id="filter-date-from"
+              class="form-control form-control-sm"
+            />
+          </div>
+          <div>
+            <label class="form-label form-label-sm">Date To</label>
+            <input
+              type="date"
+              id="filter-date-to"
               class="form-control form-control-sm"
             />
           </div>
@@ -1000,6 +1013,9 @@
   let isEditAccount = false;
   let editingAccountIndex = null;
 
+  // active platform account
+  let activeAccountUsername = null;
+
   // ===== LocalStorage helpers =====
   function loadUsers() {
     const saved = localStorage.getItem("warehouseUsers");
@@ -1051,6 +1067,23 @@
 
   function saveAccounts() {
     localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
+  }
+
+  function loadActiveAccount() {
+    activeAccountUsername = localStorage.getItem("warehouseActiveAccountUsername") || "";
+  }
+
+  function saveActiveAccount() {
+    if (activeAccountUsername) {
+      localStorage.setItem("warehouseActiveAccountUsername", activeAccountUsername);
+    } else {
+      localStorage.removeItem("warehouseActiveAccountUsername");
+    }
+  }
+
+  function getActiveAccount() {
+    if (!activeAccountUsername) return null;
+    return accounts.find(acc => acc.username === activeAccountUsername) || null;
   }
 
   function generateNextId() {
@@ -1128,7 +1161,7 @@
     renderCompletedTable();
     attachRowActions();
     updateStats();
-    renderReports(); // refresh reports after any change
+    renderReports();
   }
 
   function renderCompletedTable() {
@@ -1204,6 +1237,7 @@
     const status = document.getElementById("filter-status").value;
     const priority = document.getElementById("filter-priority").value;
     const dateFrom = document.getElementById("filter-date-from").value;
+    const dateTo = document.getElementById("filter-date-to").value;
     const search = document
       .getElementById("filter-search")
       .value.toLowerCase();
@@ -1215,7 +1249,9 @@
       if (to && h.to !== to) ok = false;
       if (status && h.status !== status) ok = false;
       if (priority && h.priority !== priority) ok = false;
+
       if (dateFrom && h.date < dateFrom) ok = false;
+      if (dateTo && h.date > dateTo) ok = false;
 
       if (search) {
         const text =
@@ -1235,6 +1271,7 @@
     document.getElementById("filter-status").value = "";
     document.getElementById("filter-priority").value = "";
     document.getElementById("filter-date-from").value = "";
+    document.getElementById("filter-date-to").value = "";
     document.getElementById("filter-search").value = "";
     filteredHandovers = [...handovers];
     renderTable();
@@ -1261,7 +1298,7 @@
     const inProgress = handovers.filter(h => h.status === "In Progress").length;
 
     const repTotal = document.getElementById("rep-total");
-    if (!repTotal) return; // Reports view is not loaded yet
+    if (!repTotal) return;
 
     document.getElementById("rep-total").textContent = total;
     document.getElementById("rep-pending").textContent = pending;
@@ -1272,7 +1309,7 @@
     const userCanvas = document.getElementById("reports-user-chart");
     if (!statusCanvas || !userCanvas) return;
 
-    // --- By Status (bar chart, all data) ---
+    // --- By Status ---
     if (reportsStatusChart) reportsStatusChart.destroy();
     reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
       type: "bar",
@@ -1344,7 +1381,6 @@
 
   // ===== Excel Export for Handover List =====
   function exportHandoverExcel() {
-    // Prefer filtered handovers; if no results, export all handovers
     const source =
       filteredHandovers && filteredHandovers.length > 0
         ? filteredHandovers
@@ -1361,7 +1397,6 @@
       "Date": h.date || "",
       "Action By": h.actionBy || "",
       "Attachment Name": h.attachmentName || "None",
-      // raw link; will convert to clickable hyperlink later
       "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
     }));
 
@@ -1375,45 +1410,32 @@
       return;
     }
 
-    // Create worksheet from JSON
     const ws = XLSX.utils.json_to_sheet(data);
 
-    // Convert "Attachment Link" column into clickable hyperlinks
+    // Hyperlinks
     if (ws["!ref"]) {
       const range = XLSX.utils.decode_range(ws["!ref"]);
       let linkColIndex = null;
       let nameColIndex = null;
 
-      // Find columns for "Attachment Link" and "Attachment Name"
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const headerAddress = XLSX.utils.encode_cell({ c: C, r: 0 });
         const headerCell = ws[headerAddress];
         if (!headerCell) continue;
-        if (headerCell.v === "Attachment Link") {
-          linkColIndex = C;
-        }
-        if (headerCell.v === "Attachment Name") {
-          nameColIndex = C;
-        }
+        if (headerCell.v === "Attachment Link") linkColIndex = C;
+        if (headerCell.v === "Attachment Name") nameColIndex = C;
       }
 
       if (linkColIndex !== null) {
         for (let R = 1; R <= range.e.r; ++R) {
-          const linkAddress = XLSX.utils.encode_cell({
-            c: linkColIndex,
-            r: R,
-          });
+          const linkAddress = XLSX.utils.encode_cell({ c: linkColIndex, r: R });
           const cell = ws[linkAddress];
           if (cell && cell.v) {
-            const url = cell.v; // original URL or data URL
+            const url = cell.v;
 
-            // Choose hyperlink text: attachment name or default text
             let displayText = "Open Attachment";
             if (nameColIndex !== null) {
-              const nameAddress = XLSX.utils.encode_cell({
-                c: nameColIndex,
-                r: R,
-              });
+              const nameAddress = XLSX.utils.encode_cell({ c: nameColIndex, r: R });
               const nameCell = ws[nameAddress];
               if (nameCell && nameCell.v && nameCell.v !== "None") {
                 displayText = nameCell.v;
@@ -1478,8 +1500,35 @@
       setSelectOptions(inputActionBy, names, false);
     }
 
-    // update employee list in account modal
     fillAccountEmployeeOptions();
+  }
+
+  // ===== Active account dropdown =====
+  function refreshActiveAccountSelect() {
+    const select = document.getElementById("active-account-select");
+    if (!select) return;
+
+    const currentValue = activeAccountUsername || "";
+
+    select.innerHTML = "";
+    const optGuest = document.createElement("option");
+    optGuest.value = "";
+    optGuest.textContent = "Guest (no login)";
+    select.appendChild(optGuest);
+
+    accounts.forEach((acc) => {
+      const opt = document.createElement("option");
+      opt.value = acc.username;
+      opt.textContent = `${acc.username} (${acc.role || "User"})`;
+      select.appendChild(opt);
+    });
+
+    select.value = currentValue;
+
+    select.addEventListener("change", () => {
+      activeAccountUsername = select.value || "";
+      saveActiveAccount();
+    });
   }
 
   // ===== Handover Modal =====
@@ -1520,10 +1569,12 @@
         inputLongDesc.value = "";
         inputPriority.value = "P3";
 
+        const activeAccount = getActiveAccount();
         if (users.length > 0) {
           inputFrom.value = users[0].name;
           inputTo.value = users[0].name;
-          inputActionBy.value = users[0].name;
+          inputActionBy.value =
+            (activeAccount && activeAccount.employeeName) || users[0].name;
         }
 
         modalTitleEl.textContent = "New Handover";
@@ -1808,6 +1859,7 @@
     });
 
     attachAccountRowActions();
+    refreshActiveAccountSelect();
   }
 
   function attachAccountRowActions() {
@@ -1873,6 +1925,7 @@
       }
       saveAccounts();
       renderAccounts();
+      refreshActiveAccountSelect();
       accountModal.hide();
     });
   }
@@ -1970,6 +2023,7 @@
         renderTable();
         renderAccounts();
         renderReports();
+        refreshActiveAccountSelect();
 
         alert("Data imported successfully.");
       } catch (err) {
@@ -2000,6 +2054,9 @@
       .getElementById("filter-date-from")
       .addEventListener("change", applyFilters);
     document
+      .getElementById("filter-date-to")
+      .addEventListener("change", applyFilters);
+    document
       .getElementById("filter-search")
       .addEventListener("input", applyFilters);
 
@@ -2015,6 +2072,7 @@
     loadUsers();
     loadHandovers();
     loadAccounts();
+    loadActiveAccount();
 
     initSidebarNavigation();
     initUserForm();
@@ -2030,6 +2088,7 @@
     initExportJson();
     initImportJson();
     renderReports();
+    refreshActiveAccountSelect();
 
     const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
     setActiveView(savedView, false);
