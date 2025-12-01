@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-head>
+<head>
   <meta charset="utf-8" />
   <title>Warehouse Handover Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -351,7 +351,11 @@ head>
       </nav>
     </div>
     <div class="sidebar-footer">
-      v1.1 – Login & roles enabled
+      <div class="mb-2 small" id="current-user-label"></div>
+      <button class="btn btn-sm btn-outline-light w-100 mb-2" id="btn-logout">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </button>
+      <div style="font-size:0.75rem;color:#9fb3ff;">v1.2 – Roles & logout</div>
     </div>
   </aside>
 
@@ -725,7 +729,7 @@ head>
         <div class="col-lg-6">
           <div class="chart-card">
             <h6>By Status (Visible Handovers)</h6>
-            <p class="text-muted mb-2">For Admin: all handovers. For users: only own handovers.</p>
+            <p class="text-muted mb-2">For Admin/Supervisor: all handovers. For others: only own handovers.</p>
             <canvas id="reports-status-chart" height="220"></canvas>
           </div>
         </div>
@@ -846,7 +850,7 @@ head>
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" class="btn btn-primary" id="handover-save-btn">
             Save
           </button>
         </div>
@@ -1037,6 +1041,7 @@ head>
 
   let isEditMode = false;
   let editingId = null;
+  let editingReadOnly = false;
 
   let editingUserIndex = null;
   let userModal, userEditForm, editUserNameInput, editUserRoleInput, editUserEmailInput;
@@ -1045,7 +1050,7 @@ head>
   let handoverForm;
   let inputId, inputFrom, inputTo, inputItems, inputLongDesc, inputPriority,
       inputStatus, inputDate, inputActionBy,
-      attachmentInput, currentAttachmentInfo, modalTitleEl;
+      attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
 
   // admin accounts modal
   let accountModal, accountForm;
@@ -1158,11 +1163,26 @@ head>
   function getVisibleHandovers() {
     const acc = getLoggedInAccount();
     if (!acc) return handovers;
-    if (acc.role === "Admin") return handovers;
+
+    if (acc.role === "Admin" || acc.role === "Supervisor") {
+      return handovers;
+    }
 
     const empName = acc.employeeName || "";
     if (!empName) return [];
     return handovers.filter(h => h.actionBy === empName);
+  }
+
+  function canEditHandover(h) {
+    const acc = getLoggedInAccount();
+    if (!acc) return false;
+    if (acc.role === "Admin" || acc.role === "Supervisor") return true;
+
+    const empName = acc.employeeName || "";
+    if (!empName) return false;
+
+    if (acc.role === "User") return h.actionBy === empName;
+    return false; // Viewer or others
   }
 
   function generateNextId() {
@@ -1199,6 +1219,21 @@ head>
 
     filteredHandovers.forEach((h) => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+      const canEdit = canEditHandover(h);
+
+      let actionsHtml = `
+        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
+          <i class="bi bi-eye"></i>
+        </button>
+      `;
+      if (canEdit) {
+        actionsHtml += `
+          <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
+            <i class="bi bi-check2"></i>
+          </button>
+        `;
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
@@ -1222,14 +1257,7 @@ head>
               : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
           }
         </td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
-            <i class="bi bi-eye"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
-            <i class="bi bi-check2"></i>
-          </button>
-        </td>
+        <td>${actionsHtml}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1304,6 +1332,10 @@ head>
         const id = btn.getAttribute("data-id");
         const h = handovers.find((x) => x.id === id);
         if (!h) return;
+        if (!canEditHandover(h)) {
+          alert("You are not allowed to update this handover.");
+          return;
+        }
         h.status = "Completed";
         saveHandovers();
         applyFilters();
@@ -1613,6 +1645,32 @@ head>
   }
 
   // ===== Handover Modal =====
+  function setHandoverFormReadOnly(readOnly) {
+    const fields = [
+      inputFrom,
+      inputTo,
+      inputItems,
+      inputLongDesc,
+      inputPriority,
+      inputStatus,
+      inputDate,
+      inputActionBy,
+      attachmentInput,
+    ];
+    fields.forEach((el) => {
+      if (!el) return;
+      if (readOnly) {
+        el.setAttribute("disabled", "disabled");
+      } else {
+        el.removeAttribute("disabled");
+      }
+    });
+
+    if (handoverSaveBtn) {
+      handoverSaveBtn.style.display = readOnly ? "none" : "inline-block";
+    }
+  }
+
   function initHandoverModal() {
     const modalEl = document.getElementById("handover-modal");
     handoverModal = new bootstrap.Modal(modalEl);
@@ -1630,6 +1688,7 @@ head>
     inputActionBy = document.getElementById("handover-action-by");
     attachmentInput = document.getElementById("handover-attachment");
     currentAttachmentInfo = document.getElementById("current-attachment-info");
+    handoverSaveBtn = document.getElementById("handover-save-btn");
 
     refreshUserSelectOptions();
 
@@ -1640,8 +1699,23 @@ head>
 
     openButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
+        const acc = getLoggedInAccount();
+        if (!acc) {
+          alert("You must be logged in to create a handover.");
+          return;
+        }
+        if (acc.status === "Disabled") {
+          alert("Your account is disabled.");
+          return;
+        }
+        if (acc.role === "Viewer") {
+          alert("Viewer accounts cannot create handovers.");
+          return;
+        }
+
         isEditMode = false;
         editingId = null;
+        editingReadOnly = false;
         handoverForm.reset();
         inputId.value = generateNextId();
         inputDate.value = new Date().toISOString().slice(0, 10);
@@ -1658,6 +1732,7 @@ head>
             (activeAccount && activeAccount.employeeName) || users[0].name;
         }
 
+        setHandoverFormReadOnly(false);
         modalTitleEl.textContent = "New Handover";
         handoverModal.show();
       });
@@ -1665,6 +1740,24 @@ head>
 
     handoverForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      if (editingReadOnly) {
+        return;
+      }
+
+      const acc = getLoggedInAccount();
+      if (!acc) {
+        alert("You must be logged in to save.");
+        return;
+      }
+      if (acc.status === "Disabled") {
+        alert("Your account is disabled.");
+        return;
+      }
+      if (!isEditMode && acc.role === "Viewer") {
+        alert("Viewer accounts cannot create handovers.");
+        return;
+      }
 
       const from = inputFrom.value;
       const to = inputTo.value;
@@ -1684,6 +1777,10 @@ head>
       if (isEditMode) {
         const current = handovers.find((h) => h.id === editingId);
         if (current) {
+          if (!canEditHandover(current)) {
+            alert("You are not allowed to edit this handover.");
+            return;
+          }
           attachmentName = current.attachmentName || null;
           attachmentType = current.attachmentType || null;
           attachmentSize = current.attachmentSize || null;
@@ -1777,7 +1874,11 @@ head>
       currentAttachmentInfo.textContent = "No attachment";
     }
 
-    modalTitleEl.textContent = "Edit Handover";
+    const editable = canEditHandover(h);
+    editingReadOnly = !editable;
+    setHandoverFormReadOnly(!editable);
+
+    modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
     handoverModal.show();
   }
 
@@ -1976,12 +2077,12 @@ head>
         renderAccounts();
         refreshActiveAccountSelect();
 
-        // if deleting logged-in account -> log out
         if (acc.username === getLoggedInUsername()) {
           setLoggedInUsername("");
           activeAccountUsername = "";
           saveActiveAccount();
           showLoginPage();
+          updateCurrentUserLabel();
         }
       });
     });
@@ -2017,6 +2118,11 @@ head>
     const btnAdd = document.getElementById("btn-add-account");
     if (btnAdd) {
       btnAdd.addEventListener("click", () => {
+        const acc = getLoggedInAccount();
+        if (!acc || acc.role !== "Admin") {
+          alert("Only Admin can add accounts.");
+          return;
+        }
         isEditAccount = false;
         editingAccountIndex = null;
         accountForm.reset();
@@ -2028,6 +2134,13 @@ head>
 
     accountForm.addEventListener("submit", (e) => {
       e.preventDefault();
+
+      const accLogged = getLoggedInAccount();
+      if (!accLogged || accLogged.role !== "Admin") {
+        alert("Only Admin can edit accounts.");
+        return;
+      }
+
       const username = accountUsernameInput.value.trim();
       const employeeName = accountEmployeeSelect.value || "";
       const role = accountRoleSelect.value || "User";
@@ -2055,6 +2168,13 @@ head>
   function openEditAccount(index) {
     const acc = accounts[index];
     if (!acc) return;
+
+    const accLogged = getLoggedInAccount();
+    if (!accLogged || accLogged.role !== "Admin") {
+      alert("Only Admin can edit accounts.");
+      return;
+    }
+
     isEditAccount = true;
     editingAccountIndex = index;
     fillAccountEmployeeOptions();
@@ -2098,6 +2218,18 @@ head>
     const select = document.getElementById("active-account-select");
     if (select && activeAccountUsername) {
       select.value = activeAccountUsername;
+    }
+    updateCurrentUserLabel();
+  }
+
+  function updateCurrentUserLabel() {
+    const label = document.getElementById("current-user-label");
+    if (!label) return;
+    const acc = getLoggedInAccount();
+    if (!acc) {
+      label.textContent = "Not logged in";
+    } else {
+      label.textContent = `Logged in as: ${acc.username} (${acc.role || "User"})`;
     }
   }
 
@@ -2163,6 +2295,12 @@ head>
     const btn = document.getElementById("btn-export-json");
     if (!btn) return;
     btn.addEventListener("click", () => {
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") {
+        alert("Only Admin can export JSON.");
+        return;
+      }
+
       const accountsExport = accounts.map(acc => ({
         username: acc.username,
         employeeName: acc.employeeName,
@@ -2198,6 +2336,11 @@ head>
     if (!btn || !input) return;
 
     btn.addEventListener("click", () => {
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") {
+        alert("Only Admin can import JSON.");
+        return;
+      }
       input.click();
     });
 
@@ -2258,6 +2401,20 @@ head>
     });
   }
 
+  // ===== Logout =====
+  function initLogout() {
+    const btn = document.getElementById("btn-logout");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      setLoggedInUsername("");
+      activeAccountUsername = "";
+      saveActiveAccount();
+      filteredHandovers = [];
+      updateCurrentUserLabel();
+      showLoginPage();
+    });
+  }
+
   // ===== DOMContentLoaded =====
   document.addEventListener("DOMContentLoaded", () => {
     // Filters
@@ -2310,6 +2467,7 @@ head>
     initExportJson();
     initImportJson();
     refreshActiveAccountSelect();
+    initLogout();
 
     // login will decide whether to show app or login page and then render tables
     initLogin();
