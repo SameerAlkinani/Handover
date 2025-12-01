@@ -1643,6 +1643,31 @@
     fillAccountEmployeeOptions();
   }
 
+  // === NEW: تقييد From في الحاند أوفر الجديد على الموظف المرتبط بالمستخدم الحالي ===
+  function setupFromForNewHandover() {
+    if (!inputFrom) return;
+
+    const acc = getLoggedInAccount();
+    const linkedName = acc?.employeeName?.trim();
+
+    inputFrom.innerHTML = ""; // تفريغ القائمة أولاً
+
+    if (linkedName) {
+      const opt = document.createElement("option");
+      opt.value = linkedName;
+      opt.textContent = linkedName;
+      inputFrom.appendChild(opt);
+      inputFrom.value = linkedName;
+    } else {
+      // لو ماكو employeeName مرتبط بالحساب، نرجع للسلوك القديم
+      const names = users.map(u => u.name);
+      setSelectOptions(inputFrom, names, false);
+      if (names.length > 0) {
+        inputFrom.value = names[0];
+      }
+    }
+  }
+
   function refreshActiveAccountSelect() {
     const select = document.getElementById("active-account-select");
     if (!select) return;
@@ -1749,12 +1774,23 @@
         inputLongDesc.value = "";
         inputPriority.value = "P3";
 
-        const activeAccount = getActiveAccount();
+        // تحديث الخيارات من المستخدمين
+        refreshUserSelectOptions();
+
+        // From: الموظف المرتبط بالمستخدم الذي سجّل الدخول
+        setupFromForNewHandover();
+
+        // To: قائمة الموظفين كالمعتاد
         if (users.length > 0) {
-          inputFrom.value = users[0].name;
           inputTo.value = users[0].name;
-          inputActionBy.value =
-            (activeAccount && activeAccount.employeeName) || users[0].name;
+        }
+
+        // Action By: الموظف المرتبط بحساب المستخدم الحالي
+        const loggedAcc = getLoggedInAccount();
+        if (loggedAcc && loggedAcc.employeeName) {
+          inputActionBy.value = loggedAcc.employeeName;
+        } else if (users.length > 0) {
+          inputActionBy.value = users[0].name;
         }
 
         setHandoverFormReadOnly(false);
@@ -1876,8 +1912,20 @@
     handoverForm.reset();
     refreshUserSelectOptions();
 
+    // إضافة قيمة From القديمة للقائمة إن لم تكن موجودة
+    const fromName = h.from || "";
+    if (fromName && inputFrom) {
+      const optionsValues = Array.from(inputFrom.options).map(o => o.value);
+      if (!optionsValues.includes(fromName)) {
+        const opt = document.createElement("option");
+        opt.value = fromName;
+        opt.textContent = fromName;
+        inputFrom.appendChild(opt);
+      }
+    }
+
     inputId.value = h.id;
-    inputFrom.value = h.from;
+    inputFrom.value = fromName;
     inputTo.value = h.to;
     inputItems.value = h.items;
     inputLongDesc.value = h.longDescription || "";
