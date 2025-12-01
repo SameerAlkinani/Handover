@@ -36,7 +36,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    /* ===== Login Page (full screen) ===== */
+    /* ===== Login Page ===== */
     #login-page {
       min-height: 100vh;
       display: flex;
@@ -173,7 +173,7 @@
       padding: 1rem 1.1rem;
     }
 
-    /* 7 filters in one row on desktop */
+    /* 7 filters on one line on desktop */
     .filters-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -355,7 +355,7 @@
       <button class="btn btn-sm btn-outline-light w-100 mb-2" id="btn-logout">
         <i class="bi bi-box-arrow-right"></i> Logout
       </button>
-      <div style="font-size:0.75rem;color:#9fb3ff;">v1.2 – Roles & logout</div>
+      <div style="font-size:0.75rem;color:#9fb3ff;">v1.3 – Role-based access</div>
     </div>
   </aside>
 
@@ -372,7 +372,6 @@
           </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-          <!-- Active platform user selector -->
           <div class="d-flex align-items-center gap-1">
             <span style="font-size:0.8rem;color:#6b7280;">User:</span>
             <select id="active-account-select" class="form-select form-select-sm" style="width: 180px;"></select>
@@ -535,7 +534,7 @@
       </div>
     </section>
 
-    <!-- HANDOVERS VIEW: COMPLETED ONLY -->
+    <!-- HANDOVERS VIEW -->
     <section class="view-section d-none" data-view="handovers">
       <div class="top-bar mb-3">
         <div>
@@ -982,7 +981,6 @@
 <script>
   const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
 
-  // ===== Data & Storage =====
   const defaultUsers = [
     { name: "Sameer Jabbar",       role: "Manager",    email: "sameer_jabbar@yahoo.com" },
     { name: "Ardasher A. Ahmad",   role: "Supervisor", email: "" },
@@ -1052,16 +1050,13 @@
       inputStatus, inputDate, inputActionBy,
       attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
 
-  // admin accounts modal
   let accountModal, accountForm;
   let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect;
   let isEditAccount = false;
   let editingAccountIndex = null;
 
-  // active platform account + logged in account
   let activeAccountUsername = null;
 
-  // ===== LocalStorage helpers =====
   function loadUsers() {
     const saved = localStorage.getItem("warehouseUsers");
     if (saved) {
@@ -1159,9 +1154,7 @@
     return accounts.find(acc => acc.username === username) || null;
   }
 
-  // ===== Visibility Logic =====
-  // Admin & Supervisor: كل الهاندوفر
-  // User / Viewer: الهاندوفر التي يكون فيها (Action By = اسمه) أو (To = اسمه)
+  // ===== Visibility rules =====
   function getVisibleHandovers() {
     const acc = getLoggedInAccount();
     if (!acc) return [];
@@ -1180,6 +1173,7 @@
     });
   }
 
+  // User can edit if he is actionBy OR To (besides admin/supervisor)
   function canEditHandover(h) {
     const acc = getLoggedInAccount();
     if (!acc) return false;
@@ -1188,8 +1182,10 @@
     const empName = acc.employeeName || "";
     if (!empName) return false;
 
-    if (acc.role === "User") return h.actionBy === empName;
-    return false; // Viewer or others
+    if (acc.role === "User") {
+      return h.actionBy === empName || h.to === empName;
+    }
+    return false; // Viewer
   }
 
   function generateNextId() {
@@ -1219,14 +1215,19 @@
     }
   }
 
-  // ===== Dashboard table =====
+  // ===== Table Rendering =====
   function renderTable() {
     const tbody = document.getElementById("handover-tbody");
     tbody.innerHTML = "";
 
+    const acc = getLoggedInAccount();
+    const empName = acc?.employeeName?.trim() || "";
+
     filteredHandovers.forEach((h) => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const canEdit = canEditHandover(h);
+
+      const isAssignedToUser = empName && h.to === empName;
 
       let actionsHtml = `
         <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
@@ -1245,7 +1246,14 @@
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
         <td>${h.from}</td>
-        <td>${h.to}</td>
+        <td>
+          ${h.to}
+          ${
+            isAssignedToUser
+              ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>`
+              : ""
+          }
+        </td>
         <td>${h.items}</td>
         <td>${h.priority || "-"}</td>
         <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
@@ -1287,13 +1295,24 @@
     const base = getVisibleHandovers();
     const completed = base.filter((h) => h.status === "Completed");
 
+    const acc = getLoggedInAccount();
+    const empName = acc?.employeeName?.trim() || "";
+
     completed.forEach((h) => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+      const isAssignedToUser = empName && h.to === empName;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
         <td>${h.from}</td>
-        <td>${h.to}</td>
+        <td>
+          ${h.to}
+          ${
+            isAssignedToUser
+              ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>`
+              : ""
+          }
+        </td>
         <td>${h.items}</td>
         <td>${h.priority || "-"}</td>
         <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
@@ -1623,7 +1642,6 @@
     fillAccountEmployeeOptions();
   }
 
-  // ===== Active account dropdown =====
   function refreshActiveAccountSelect() {
     const select = document.getElementById("active-account-select");
     if (!select) return;
@@ -1651,7 +1669,6 @@
     };
   }
 
-  // ===== Handover Modal =====
   function setHandoverFormReadOnly(readOnly) {
     const fields = [
       inputFrom,
@@ -1748,9 +1765,7 @@
     handoverForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      if (editingReadOnly) {
-        return;
-      }
+      if (editingReadOnly) return;
 
       const acc = getLoggedInAccount();
       if (!acc) {
@@ -1858,7 +1873,6 @@
     editingId = id;
 
     handoverForm.reset();
-
     refreshUserSelectOptions();
 
     inputId.value = h.id;
@@ -1889,12 +1903,11 @@
     handoverModal.show();
   }
 
-  // ===== Sidebar navigation =====
+  // ===== Sidebar Navigation =====
   function setActiveView(view, save = true) {
     const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
     const views = document.querySelectorAll(".view-section");
 
-    // Only Admin can open Users (Admin)
     if (view === "admin-users") {
       const acc = getLoggedInAccount();
       if (!acc || acc.role !== "Admin") {
@@ -1905,20 +1918,12 @@
 
     navLinks.forEach((link) => {
       const v = link.getAttribute("data-view");
-      if (v === view) {
-        link.classList.add("active");
-      } else {
-        link.classList.remove("active");
-      }
+      link.classList.toggle("active", v === view);
     });
 
     views.forEach((section) => {
       const v = section.getAttribute("data-view");
-      if (v === view) {
-        section.classList.remove("d-none");
-      } else {
-        section.classList.add("d-none");
-      }
+      section.classList.toggle("d-none", v !== view);
     });
 
     if (save) {
@@ -1938,7 +1943,7 @@
     });
   }
 
-  // ===== Users (employees) =====
+  // ===== Employees =====
   function renderUsers() {
     const tbody = document.getElementById("users-tbody");
     tbody.innerHTML = "";
@@ -2274,7 +2279,6 @@
       setActiveView(savedView, false);
     });
 
-    // auto-login if possible
     const storedLogin = getLoggedInUsername();
     if (storedLogin) {
       const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
@@ -2297,7 +2301,7 @@
     showLoginPage();
   }
 
-  // ===== Export JSON =====
+  // ===== JSON Export/Import =====
   function initExportJson() {
     const btn = document.getElementById("btn-export-json");
     if (!btn) return;
@@ -2336,7 +2340,6 @@
     });
   }
 
-  // ===== Import JSON =====
   function initImportJson() {
     const btn = document.getElementById("btn-import-json");
     const input = document.getElementById("import-json-input");
@@ -2424,7 +2427,6 @@
 
   // ===== DOMContentLoaded =====
   document.addEventListener("DOMContentLoaded", () => {
-    // Filters
     document
       .getElementById("filter-from")
       .addEventListener("change", applyFilters);
@@ -2476,7 +2478,6 @@
     refreshActiveAccountSelect();
     initLogout();
 
-    // login will decide whether to show app or login page and then render tables
     initLogin();
   });
 </script>
