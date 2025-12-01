@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head>
+head>
   <meta charset="utf-8" />
   <title>Warehouse Handover Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -54,7 +54,7 @@
       background: #fff;
     }
 
-    /* ===== App Shell (unchanged platform) ===== */
+    /* ===== App Shell ===== */
     .app-shell {
       min-height: 100vh;
       display: flex;
@@ -173,7 +173,7 @@
       padding: 1rem 1.1rem;
     }
 
-    /* Filters row: 7 columns on desktop (one line) */
+    /* 7 filters in one row on desktop */
     .filters-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -230,7 +230,6 @@
       color: #1d4ed8;
     }
 
-    /* Resizable Handover List card (only height) */
     .table-card--resizable {
       resize: vertical;
       overflow: hidden;
@@ -291,7 +290,7 @@
 </head>
 <body>
 
-<!-- ===== Login Page (Option A) ===== -->
+<!-- ===== Login Page ===== -->
 <div id="login-page">
   <div class="login-card shadow-sm p-4">
     <h4 class="mb-3 text-center">Warehouse Handover Login</h4>
@@ -314,7 +313,7 @@
   </div>
 </div>
 
-<!-- ===== App Shell (unchanged platform layout) ===== -->
+<!-- ===== App Shell ===== -->
 <div id="app-shell" class="app-shell" style="display:none;">
   <!-- Sidebar -->
   <aside class="sidebar">
@@ -352,7 +351,7 @@
       </nav>
     </div>
     <div class="sidebar-footer">
-      v1.0 – Login enabled
+      v1.1 – Login & roles enabled
     </div>
   </aside>
 
@@ -496,7 +495,7 @@
         </div>
       </section>
 
-      <!-- Table ONLY (full width, resizable) -->
+      <!-- Table -->
       <div class="row mt-2 g-3">
         <div class="col-12">
           <section class="table-card table-card--resizable">
@@ -524,7 +523,6 @@
                 </tr>
                 </thead>
                 <tbody id="handover-tbody">
-                <!-- Rows rendered by JS -->
                 </tbody>
               </table>
             </div>
@@ -569,7 +567,6 @@
             </tr>
             </thead>
             <tbody id="completed-tbody">
-            <!-- completed rows -->
             </tbody>
           </table>
         </div>
@@ -624,7 +621,6 @@
             </tr>
             </thead>
             <tbody id="users-tbody">
-            <!-- users rows -->
             </tbody>
           </table>
         </div>
@@ -638,7 +634,7 @@
           <div class="top-bar-title">Users (Admin)</div>
           <div style="font-size: 0.85rem; color: #6b7280">
             Manage application accounts (username, role, and link to employees).  
-            No real passwords here yet – prototype only.
+            Passwords are local to this browser only.
           </div>
         </div>
       </div>
@@ -659,11 +655,10 @@
               <th>Employee</th>
               <th>Role</th>
               <th>Status</th>
-              <th style="width: 70px;">Actions</th>
+              <th style="width: 100px;">Actions</th>
             </tr>
             </thead>
             <tbody id="accounts-tbody">
-            <!-- account rows -->
             </tbody>
           </table>
         </div>
@@ -729,15 +724,15 @@
       <div class="row g-3">
         <div class="col-lg-6">
           <div class="chart-card">
-            <h6>By Status (All Handovers)</h6>
-            <p class="text-muted mb-2">Bar chart using all records, independent of filters.</p>
+            <h6>By Status (Visible Handovers)</h6>
+            <p class="text-muted mb-2">For Admin: all handovers. For users: only own handovers.</p>
             <canvas id="reports-status-chart" height="220"></canvas>
           </div>
         </div>
         <div class="col-lg-6">
           <div class="chart-card">
             <h6>Handovers by User</h6>
-            <p class="text-muted mb-2">Number of handovers per Action By.</p>
+            <p class="text-muted mb-2">Number of handovers per Action By (within visibility rules).</p>
             <canvas id="reports-user-chart" height="220"></canvas>
           </div>
         </div>
@@ -860,7 +855,7 @@
   </div>
 </div>
 
-<!-- Modal: Edit User -->
+<!-- Modal: Edit User (employee) -->
 <div
   class="modal fade"
   id="user-modal"
@@ -1022,7 +1017,6 @@
     },
   ];
 
-  // default accounts now include a password (stored only locally)
   const defaultAccounts = [
     {
       username: "admin",
@@ -1099,7 +1093,6 @@
   }
 
   function normalizeAccountsPasswords() {
-    // ensure each account has a password; default to 1234 if missing
     accounts.forEach(acc => {
       if (typeof acc.password === "undefined" || acc.password === null) {
         acc.password = "1234";
@@ -1153,6 +1146,23 @@
   function getActiveAccount() {
     if (!activeAccountUsername) return null;
     return accounts.find(acc => acc.username === activeAccountUsername) || null;
+  }
+
+  function getLoggedInAccount() {
+    const username = getLoggedInUsername();
+    if (!username) return null;
+    return accounts.find(acc => acc.username === username) || null;
+  }
+
+  // Handovers visible to current logged-in user
+  function getVisibleHandovers() {
+    const acc = getLoggedInAccount();
+    if (!acc) return handovers;
+    if (acc.role === "Admin") return handovers;
+
+    const empName = acc.employeeName || "";
+    if (!empName) return [];
+    return handovers.filter(h => h.actionBy === empName);
   }
 
   function generateNextId() {
@@ -1239,7 +1249,8 @@
     if (!tbody) return;
 
     tbody.innerHTML = "";
-    const completed = handovers.filter((h) => h.status === "Completed");
+    const base = getVisibleHandovers();
+    const completed = base.filter((h) => h.status === "Completed");
 
     completed.forEach((h) => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
@@ -1311,7 +1322,9 @@
       .getElementById("filter-search")
       .value.toLowerCase();
 
-    filteredHandovers = handovers.filter((h) => {
+    const base = getVisibleHandovers();
+
+    filteredHandovers = base.filter((h) => {
       let ok = true;
 
       if (from && h.from !== from) ok = false;
@@ -1342,7 +1355,7 @@
     document.getElementById("filter-date-from").value = "";
     document.getElementById("filter-date-to").value = "";
     document.getElementById("filter-search").value = "";
-    filteredHandovers = [...handovers];
+    filteredHandovers = getVisibleHandovers();
     renderTable();
   }
 
@@ -1358,13 +1371,15 @@
     document.getElementById("stat-delayed").textContent = delayed;
   }
 
-  // ===== Reports (By Status + By User based on ALL handovers) =====
+  // ===== Reports =====
   function renderReports() {
-    const total = handovers.length;
-    const pending = handovers.filter(h => h.status === "Pending").length;
-    const completed = handovers.filter(h => h.status === "Completed").length;
-    const delayed = handovers.filter(h => h.status === "Delayed").length;
-    const inProgress = handovers.filter(h => h.status === "In Progress").length;
+    const base = getVisibleHandovers();
+
+    const total = base.length;
+    const pending = base.filter(h => h.status === "Pending").length;
+    const completed = base.filter(h => h.status === "Completed").length;
+    const delayed = base.filter(h => h.status === "Delayed").length;
+    const inProgress = base.filter(h => h.status === "In Progress").length;
 
     const repTotal = document.getElementById("rep-total");
     if (!repTotal) return;
@@ -1378,7 +1393,6 @@
     const userCanvas = document.getElementById("reports-user-chart");
     if (!statusCanvas || !userCanvas) return;
 
-    // --- By Status ---
     if (reportsStatusChart) reportsStatusChart.destroy();
     reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
       type: "bar",
@@ -1408,9 +1422,8 @@
       },
     });
 
-    // --- By User ---
     const byUser = {};
-    handovers.forEach(h => {
+    base.forEach(h => {
       const key = h.actionBy || "Unknown";
       byUser[key] = (byUser[key] || 0) + 1;
     });
@@ -1448,12 +1461,12 @@
     });
   }
 
-  // ===== Excel Export for Handover List =====
+  // ===== Excel Export =====
   function exportHandoverExcel() {
     const source =
       filteredHandovers && filteredHandovers.length > 0
         ? filteredHandovers
-        : handovers;
+        : getVisibleHandovers();
 
     const data = source.map((h) => ({
       "HNDR ID": h.id,
@@ -1481,7 +1494,6 @@
 
     const ws = XLSX.utils.json_to_sheet(data);
 
-    // Hyperlinks in "Attachment Link" column
     if (ws["!ref"]) {
       const range = XLSX.utils.decode_range(ws["!ref"]);
       let linkColIndex = null;
@@ -1774,6 +1786,15 @@
     const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
     const views = document.querySelectorAll(".view-section");
 
+    // Only Admin can open Users (Admin)
+    if (view === "admin-users") {
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") {
+        alert("Only Admin can access Users (Admin) page.");
+        return;
+      }
+    }
+
     navLinks.forEach((link) => {
       const v = link.getAttribute("data-view");
       if (v === view) {
@@ -1922,6 +1943,9 @@
           <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${index}">
             <i class="bi bi-pencil"></i>
           </button>
+          <button class="btn btn-sm btn-outline-danger btn-delete-account" data-index="${index}">
+            <i class="bi bi-trash"></i>
+          </button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -1936,6 +1960,29 @@
       btn.addEventListener("click", () => {
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         openEditAccount(idx);
+      });
+    });
+
+    document.querySelectorAll(".btn-delete-account").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-index"), 10);
+        const acc = accounts[idx];
+        if (!acc) return;
+        const ok = confirm(`Are you sure you want to delete account "${acc.username}"?`);
+        if (!ok) return;
+
+        accounts.splice(idx, 1);
+        saveAccounts();
+        renderAccounts();
+        refreshActiveAccountSelect();
+
+        // if deleting logged-in account -> log out
+        if (acc.username === getLoggedInUsername()) {
+          setLoggedInUsername("");
+          activeAccountUsername = "";
+          saveActiveAccount();
+          showLoginPage();
+        }
       });
     });
   }
@@ -1988,7 +2035,13 @@
       if (!username) return;
 
       if (isEditAccount && editingAccountIndex !== null) {
-        accounts[editingAccountIndex] = { ...accounts[editingAccountIndex], username, employeeName, role, status };
+        accounts[editingAccountIndex] = {
+          ...accounts[editingAccountIndex],
+          username,
+          employeeName,
+          role,
+          status,
+        };
       } else {
         accounts.push({ username, employeeName, role, status, password: "1234" });
       }
@@ -2041,7 +2094,6 @@
     if (loginPageEl) loginPageEl.style.display = "none";
     if (appShellEl) appShellEl.style.display = "flex";
 
-    // make sure active account dropdown reflects logged in user
     refreshActiveAccountSelect();
     const select = document.getElementById("active-account-select");
     if (select && activeAccountUsername) {
@@ -2069,29 +2121,40 @@
         return;
       }
 
-      // success
       loginErrorEl.style.display = "none";
       activeAccountUsername = result.account.username;
       saveActiveAccount();
       setLoggedInUsername(activeAccountUsername);
+
+      filteredHandovers = getVisibleHandovers();
       showApp();
+      renderTable();
+      renderAccounts();
+      renderReports();
+      const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
+      setActiveView(savedView, false);
     });
 
-    // try auto-login if there is a stored logged in user
+    // auto-login if possible
     const storedLogin = getLoggedInUsername();
     if (storedLogin) {
       const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
       if (acc) {
         activeAccountUsername = storedLogin;
         saveActiveAccount();
+        filteredHandovers = getVisibleHandovers();
         showApp();
+        renderTable();
+        renderAccounts();
+        renderReports();
+        const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
+        setActiveView(savedView, false);
         return;
       } else {
         setLoggedInUsername("");
       }
     }
 
-    // if no valid session, show login
     showLoginPage();
   }
 
@@ -2100,7 +2163,6 @@
     const btn = document.getElementById("btn-export-json");
     if (!btn) return;
     btn.addEventListener("click", () => {
-      // For safety, do not export passwords
       const accountsExport = accounts.map(acc => ({
         username: acc.username,
         employeeName: acc.employeeName,
@@ -2177,7 +2239,7 @@
         saveUsers();
         saveAccounts();
 
-        filteredHandovers = [...handovers];
+        filteredHandovers = getVisibleHandovers();
 
         renderUsers();
         refreshUserSelectOptions();
@@ -2198,7 +2260,7 @@
 
   // ===== DOMContentLoaded =====
   document.addEventListener("DOMContentLoaded", () => {
-    // Filters events
+    // Filters
     document
       .getElementById("filter-from")
       .addEventListener("change", applyFilters);
@@ -2244,17 +2306,12 @@
     initAccountModal();
 
     refreshUserSelectOptions();
-    renderTable();
     renderAccounts();
     initExportJson();
     initImportJson();
-    renderReports();
     refreshActiveAccountSelect();
 
-    const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
-    setActiveView(savedView, false);
-
-    // finally, init login logic (this will decide whether to show login or app)
+    // login will decide whether to show app or login page and then render tables
     initLogin();
   });
 </script>
