@@ -154,15 +154,16 @@
       padding: 1rem 1.1rem;
     }
 
+    /* 6 filters in one horizontal row on desktop */
     .filters-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 0.75rem;
+      align-items: end;
     }
 
     .table-responsive {
       margin-top: 0.75rem;
-      max-height: 420px;
       overflow: auto;
     }
 
@@ -210,12 +211,20 @@
       color: #1d4ed8;
     }
 
-    /* Allow manual resize of the Handover List card (only height) */
+    /* Resizable Handover List card (only height) */
     .table-card--resizable {
       resize: vertical;
-      overflow: auto;
+      overflow: hidden;
       min-height: 220px;
       max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-card--resizable .table-responsive {
+      flex: 1 1 auto;
+      max-height: none;
+      overflow-y: auto;
     }
 
     @media (max-width: 992px) {
@@ -1119,7 +1128,7 @@
     renderCompletedTable();
     attachRowActions();
     updateStats();
-    renderReports(); // تحديث التقارير بعد أي تغيير
+    renderReports(); // refresh reports after any change
   }
 
   function renderCompletedTable() {
@@ -1252,7 +1261,7 @@
     const inProgress = handovers.filter(h => h.status === "In Progress").length;
 
     const repTotal = document.getElementById("rep-total");
-    if (!repTotal) return; // لو صفحة التقارير غير محملة
+    if (!repTotal) return; // Reports view is not loaded yet
 
     document.getElementById("rep-total").textContent = total;
     document.getElementById("rep-pending").textContent = pending;
@@ -1335,16 +1344,21 @@
 
   // ===== Excel Export for Handover List =====
   function exportHandoverExcel() {
-    // use filteredHandovers so التصدير يحترم الفلتر الحالي
-    const data = filteredHandovers.map(h => ({
+    // Prefer filtered handovers; if no results, export all handovers
+    const source =
+      filteredHandovers && filteredHandovers.length > 0
+        ? filteredHandovers
+        : handovers;
+
+    const data = source.map(h => ({
       "HNDR ID": h.id,
       "From": h.from,
       "To": h.to,
       "Items": h.items,
       "Long Description": h.longDescription || "",
-      "Priority": h.priority,
-      "Status": h.status,
-      "Date": h.date,
+      "Priority": h.priority || "",
+      "Status": h.status || "",
+      "Date": h.date || "",
       "Action By": h.actionBy || "",
       "Attachment Name": h.attachmentName || "None",
       "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
@@ -1352,6 +1366,11 @@
 
     if (data.length === 0) {
       alert("No records to export.");
+      return;
+    }
+
+    if (typeof XLSX === "undefined") {
+      alert("XLSX library is not loaded. Please check the script include.");
       return;
     }
 
