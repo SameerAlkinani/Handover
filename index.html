@@ -154,7 +154,7 @@
       padding: 1rem 1.1rem;
     }
 
-    /* 6 filters in one horizontal row on desktop */
+    /* Filters row: 6 columns on desktop */
     .filters-grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1350,7 +1350,7 @@
         ? filteredHandovers
         : handovers;
 
-    const data = source.map(h => ({
+    const data = source.map((h) => ({
       "HNDR ID": h.id,
       "From": h.from,
       "To": h.to,
@@ -1361,6 +1361,7 @@
       "Date": h.date || "",
       "Action By": h.actionBy || "",
       "Attachment Name": h.attachmentName || "None",
+      // raw link; will convert to clickable hyperlink later
       "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
     }));
 
@@ -1374,7 +1375,61 @@
       return;
     }
 
+    // Create worksheet from JSON
     const ws = XLSX.utils.json_to_sheet(data);
+
+    // Convert "Attachment Link" column into clickable hyperlinks
+    if (ws["!ref"]) {
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      let linkColIndex = null;
+      let nameColIndex = null;
+
+      // Find columns for "Attachment Link" and "Attachment Name"
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const headerAddress = XLSX.utils.encode_cell({ c: C, r: 0 });
+        const headerCell = ws[headerAddress];
+        if (!headerCell) continue;
+        if (headerCell.v === "Attachment Link") {
+          linkColIndex = C;
+        }
+        if (headerCell.v === "Attachment Name") {
+          nameColIndex = C;
+        }
+      }
+
+      if (linkColIndex !== null) {
+        for (let R = 1; R <= range.e.r; ++R) {
+          const linkAddress = XLSX.utils.encode_cell({
+            c: linkColIndex,
+            r: R,
+          });
+          const cell = ws[linkAddress];
+          if (cell && cell.v) {
+            const url = cell.v; // original URL or data URL
+
+            // Choose hyperlink text: attachment name or default text
+            let displayText = "Open Attachment";
+            if (nameColIndex !== null) {
+              const nameAddress = XLSX.utils.encode_cell({
+                c: nameColIndex,
+                r: R,
+              });
+              const nameCell = ws[nameAddress];
+              if (nameCell && nameCell.v && nameCell.v !== "None") {
+                displayText = nameCell.v;
+              }
+            }
+
+            cell.l = {
+              Target: url,
+              Tooltip: "Open attachment in browser",
+            };
+            cell.v = displayText;
+          }
+        }
+      }
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Handover List");
     XLSX.writeFile(wb, "Handover_List.xlsx");
