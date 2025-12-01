@@ -1227,7 +1227,6 @@
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const canEdit = canEditHandover(h);
 
-      // NOW badge is based on Action By
       const isAssignedToUser = empName && h.actionBy === empName;
 
       let actionsHtml = `
@@ -1634,8 +1633,7 @@
     setSelectOptions(filterFrom, names, true, "All");
     setSelectOptions(filterTo, names, true, "All");
 
-    if (inputFrom && inputTo && inputActionBy) {
-      setSelectOptions(inputFrom, names, false);
+    if (inputTo && inputActionBy) {
       setSelectOptions(inputTo, names, false);
       setSelectOptions(inputActionBy, names, false);
     }
@@ -1659,13 +1657,15 @@
       inputFrom.appendChild(opt);
       inputFrom.value = linkedName;
     } else {
-      // لو ماكو employeeName مرتبط بالحساب، نرجع للسلوك القديم
       const names = users.map(u => u.name);
       setSelectOptions(inputFrom, names, false);
       if (names.length > 0) {
         inputFrom.value = names[0];
       }
     }
+
+    // From دائماً غير قابل للتعديل (حتى لو خيار واحد)
+    inputFrom.setAttribute("disabled", "disabled");
   }
 
   function refreshActiveAccountSelect() {
@@ -1695,9 +1695,9 @@
     };
   }
 
+  // From لا يدخل هنا، يبقى دائماً Disabled
   function setHandoverFormReadOnly(readOnly) {
     const fields = [
-      inputFrom,
       inputTo,
       inputItems,
       inputLongDesc,
@@ -1715,6 +1715,11 @@
         el.removeAttribute("disabled");
       }
     });
+
+    // From يبقى دائماً غير قابل للتعديل
+    if (inputFrom) {
+      inputFrom.setAttribute("disabled", "disabled");
+    }
 
     if (handoverSaveBtn) {
       handoverSaveBtn.style.display = readOnly ? "none" : "inline-block";
@@ -1774,10 +1779,9 @@
         inputLongDesc.value = "";
         inputPriority.value = "P3";
 
-        // تحديث الخيارات من المستخدمين
         refreshUserSelectOptions();
 
-        // From: الموظف المرتبط بالمستخدم الذي سجّل الدخول
+        // From: الموظف المرتبط بالحساب الحالي فقط (قائمة خيار واحد وتعطيل)
         setupFromForNewHandover();
 
         // To: قائمة الموظفين كالمعتاد
@@ -1912,20 +1916,22 @@
     handoverForm.reset();
     refreshUserSelectOptions();
 
-    // إضافة قيمة From القديمة للقائمة إن لم تكن موجودة
     const fromName = h.from || "";
-    if (fromName && inputFrom) {
-      const optionsValues = Array.from(inputFrom.options).map(o => o.value);
-      if (!optionsValues.includes(fromName)) {
+
+    // From: عند فتح هاند أوفر قديم، يعرض فقط القيمة المحفوظة، وقائمة من خيار واحد وغير قابل للتعديل
+    if (inputFrom) {
+      inputFrom.innerHTML = "";
+      if (fromName) {
         const opt = document.createElement("option");
         opt.value = fromName;
         opt.textContent = fromName;
         inputFrom.appendChild(opt);
+        inputFrom.value = fromName;
       }
+      inputFrom.setAttribute("disabled", "disabled");
     }
 
     inputId.value = h.id;
-    inputFrom.value = fromName;
     inputTo.value = h.to;
     inputItems.value = h.items;
     inputLongDesc.value = h.longDescription || "";
