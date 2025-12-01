@@ -173,7 +173,6 @@
       padding: 1rem 1.1rem;
     }
 
-    /* 7 filters in one line on desktop */
     .filters-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -308,7 +307,7 @@
     </form>
     <div class="mt-3 text-muted small text-center">
       Use a username from <strong>Users (Admin)</strong>.<br/>
-      Default password for all accounts: <strong>1234</strong>.
+      Password is set by the <strong>Admin</strong> for each account (initial default is <strong>1234</strong> for new accounts).
     </div>
   </div>
 </div>
@@ -953,6 +952,18 @@
               <option value="Disabled">Disabled</option>
             </select>
           </div>
+          <div class="mb-2">
+            <label class="form-label">Password (Admin only)</label>
+            <input
+              type="password"
+              id="account-password"
+              class="form-control"
+              placeholder="Leave blank to keep current password"
+            />
+            <div class="form-text">
+              Only Admin can set or change passwords for user accounts.
+            </div>
+          </div>
           <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
             Passwords are stored only in this browser (prototype).  
             Exported JSON does not include passwords for safety.
@@ -1051,7 +1062,7 @@
       attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
 
   let accountModal, accountForm;
-  let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect;
+  let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect, accountPasswordInput;
   let isEditAccount = false;
   let editingAccountIndex = null;
 
@@ -1191,7 +1202,7 @@
   function generateNextId() {
     if (handovers.length === 0) return "HNDR-001";
     let maxNum = 0;
-    handovers.forEach((h) => {
+    handovers.forEach(h => {
       const parts = String(h.id).split("-");
       const num = parseInt(parts[1] || "0", 10);
       if (!isNaN(num) && num > maxNum) maxNum = num;
@@ -1223,7 +1234,7 @@
     const acc = getLoggedInAccount();
     const empName = acc?.employeeName?.trim() || "";
 
-    filteredHandovers.forEach((h) => {
+    filteredHandovers.forEach(h => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const canEdit = canEditHandover(h);
 
@@ -1293,12 +1304,12 @@
 
     tbody.innerHTML = "";
     const base = getVisibleHandovers();
-    const completed = base.filter((h) => h.status === "Completed");
+    const completed = base.filter(h => h.status === "Completed");
 
     const acc = getLoggedInAccount();
     const empName = acc?.employeeName?.trim() || "";
 
-    completed.forEach((h) => {
+    completed.forEach(h => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const isAssignedToUser = empName && h.actionBy === empName;
       const tr = document.createElement("tr");
@@ -1346,17 +1357,17 @@
   }
 
   function attachRowActions() {
-    document.querySelectorAll(".btn-view").forEach((btn) => {
+    document.querySelectorAll(".btn-view").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
         openEditHandover(id);
       });
     });
 
-    document.querySelectorAll(".btn-complete").forEach((btn) => {
+    document.querySelectorAll(".btn-complete").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
-        const h = handovers.find((x) => x.id === id);
+        const h = handovers.find(x => x.id === id);
         if (!h) return;
         if (!canEditHandover(h)) {
           alert("You are not allowed to update this handover.");
@@ -1382,7 +1393,7 @@
 
     const base = getVisibleHandovers();
 
-    filteredHandovers = base.filter((h) => {
+    filteredHandovers = base.filter(h => {
       let ok = true;
 
       if (from && h.from !== from) ok = false;
@@ -1419,9 +1430,9 @@
 
   function updateStats() {
     const total = filteredHandovers.length;
-    const pending = filteredHandovers.filter((h) => h.status === "Pending").length;
-    const completed = filteredHandovers.filter((h) => h.status === "Completed").length;
-    const delayed = filteredHandovers.filter((h) => h.status === "Delayed").length;
+    const pending = filteredHandovers.filter(h => h.status === "Pending").length;
+    const completed = filteredHandovers.filter(h => h.status === "Completed").length;
+    const delayed = filteredHandovers.filter(h => h.status === "Delayed").length;
 
     document.getElementById("stat-total").textContent = total;
     document.getElementById("stat-pending").textContent = pending;
@@ -1526,7 +1537,7 @@
         ? filteredHandovers
         : getVisibleHandovers();
 
-    const data = source.map((h) => ({
+    const data = source.map(h => ({
       "HNDR ID": h.id,
       "From": h.from,
       "To": h.to,
@@ -1614,7 +1625,7 @@
       opt.textContent = emptyLabel || "All";
       select.appendChild(opt);
     }
-    values.forEach((v) => {
+    values.forEach(v => {
       const opt = document.createElement("option");
       opt.value = v;
       opt.textContent = v;
@@ -1626,7 +1637,7 @@
   }
 
   function refreshUserSelectOptions() {
-    const names = users.map((u) => u.name);
+    const names = users.map(u => u.name);
 
     const filterFrom = document.getElementById("filter-from");
     const filterTo = document.getElementById("filter-to");
@@ -1641,14 +1652,14 @@
     fillAccountEmployeeOptions();
   }
 
-  // === NEW: تقييد From في الحاند أوفر الجديد على الموظف المرتبط بالمستخدم الحالي ===
+  // === Restrict From (new handover) to logged-in employee ===
   function setupFromForNewHandover() {
     if (!inputFrom) return;
 
     const acc = getLoggedInAccount();
     const linkedName = acc?.employeeName?.trim();
 
-    inputFrom.innerHTML = ""; // تفريغ القائمة أولاً
+    inputFrom.innerHTML = "";
 
     if (linkedName) {
       const opt = document.createElement("option");
@@ -1664,7 +1675,6 @@
       }
     }
 
-    // From دائماً غير قابل للتعديل (حتى لو خيار واحد)
     inputFrom.setAttribute("disabled", "disabled");
   }
 
@@ -1680,7 +1690,7 @@
     optGuest.textContent = "Guest (no login)";
     select.appendChild(optGuest);
 
-    accounts.forEach((acc) => {
+    accounts.forEach(acc => {
       const opt = document.createElement("option");
       opt.value = acc.username;
       opt.textContent = `${acc.username} (${acc.role || "User"})`;
@@ -1695,7 +1705,7 @@
     };
   }
 
-  // From لا يدخل هنا، يبقى دائماً Disabled
+  // From always disabled (read-only)
   function setHandoverFormReadOnly(readOnly) {
     const fields = [
       inputTo,
@@ -1707,7 +1717,7 @@
       inputActionBy,
       attachmentInput,
     ];
-    fields.forEach((el) => {
+    fields.forEach(el => {
       if (!el) return;
       if (readOnly) {
         el.setAttribute("disabled", "disabled");
@@ -1716,7 +1726,6 @@
       }
     });
 
-    // From يبقى دائماً غير قابل للتعديل
     if (inputFrom) {
       inputFrom.setAttribute("disabled", "disabled");
     }
@@ -1752,7 +1761,7 @@
       document.getElementById("btn-add-handover-2"),
     ].filter(Boolean);
 
-    openButtons.forEach((btn) => {
+    openButtons.forEach(btn => {
       btn.addEventListener("click", () => {
         const acc = getLoggedInAccount();
         if (!acc) {
@@ -1781,15 +1790,12 @@
 
         refreshUserSelectOptions();
 
-        // From: الموظف المرتبط بالحساب الحالي فقط (قائمة خيار واحد وتعطيل)
         setupFromForNewHandover();
 
-        // To: قائمة الموظفين كالمعتاد
         if (users.length > 0) {
           inputTo.value = users[0].name;
         }
 
-        // Action By: الموظف المرتبط بحساب المستخدم الحالي
         const loggedAcc = getLoggedInAccount();
         if (loggedAcc && loggedAcc.employeeName) {
           inputActionBy.value = loggedAcc.employeeName;
@@ -1803,7 +1809,7 @@
       });
     });
 
-    handoverForm.addEventListener("submit", async (e) => {
+    handoverForm.addEventListener("submit", async e => {
       e.preventDefault();
 
       if (editingReadOnly) return;
@@ -1838,7 +1844,7 @@
       let attachmentDataUrl = null;
 
       if (isEditMode) {
-        const current = handovers.find((h) => h.id === editingId);
+        const current = handovers.find(h => h.id === editingId);
         if (current) {
           if (!canEditHandover(current)) {
             alert("You are not allowed to edit this handover.");
@@ -1863,7 +1869,7 @@
       }
 
       if (isEditMode) {
-        const idx = handovers.findIndex((h) => h.id === editingId);
+        const idx = handovers.findIndex(h => h.id === editingId);
         if (idx === -1) return;
         handovers[idx] = {
           ...handovers[idx],
@@ -1907,7 +1913,7 @@
   }
 
   function openEditHandover(id) {
-    const h = handovers.find((x) => x.id === id);
+    const h = handovers.find(x => x.id === id);
     if (!h) return;
 
     isEditMode = true;
@@ -1918,7 +1924,6 @@
 
     const fromName = h.from || "";
 
-    // From: عند فتح هاند أوفر قديم، يعرض فقط القيمة المحفوظة، وقائمة من خيار واحد وغير قابل للتعديل
     if (inputFrom) {
       inputFrom.innerHTML = "";
       if (fromName) {
@@ -1971,12 +1976,12 @@
       }
     }
 
-    navLinks.forEach((link) => {
+    navLinks.forEach(link => {
       const v = link.getAttribute("data-view");
       link.classList.toggle("active", v === view);
     });
 
-    views.forEach((section) => {
+    views.forEach(section => {
       const v = section.getAttribute("data-view");
       section.classList.toggle("d-none", v !== view);
     });
@@ -1988,8 +1993,8 @@
 
   function initSidebarNavigation() {
     const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-    navLinks.forEach((link) => {
-      link.addEventListener("click", (e) => {
+    navLinks.forEach(link => {
+      link.addEventListener("click", e => {
         e.preventDefault();
         const view = link.getAttribute("data-view");
         if (!view) return;
@@ -2022,7 +2027,7 @@
   }
 
   function attachUserRowActions() {
-    document.querySelectorAll(".btn-edit-user").forEach((btn) => {
+    document.querySelectorAll(".btn-edit-user").forEach(btn => {
       btn.addEventListener("click", () => {
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         openEditUser(idx);
@@ -2036,7 +2041,7 @@
     const roleInput = document.getElementById("user-role");
     const emailInput = document.getElementById("user-email");
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", e => {
       e.preventDefault();
       const name = nameInput.value.trim();
       const role = roleInput.value.trim();
@@ -2060,7 +2065,7 @@
     editUserRoleInput = document.getElementById("edit-user-role");
     editUserEmailInput = document.getElementById("edit-user-email");
 
-    userEditForm.addEventListener("submit", (e) => {
+    userEditForm.addEventListener("submit", e => {
       e.preventDefault();
       if (editingUserIndex === null) return;
       const name = editUserNameInput.value.trim();
@@ -2124,14 +2129,14 @@
   }
 
   function attachAccountRowActions() {
-    document.querySelectorAll(".btn-edit-account").forEach((btn) => {
+    document.querySelectorAll(".btn-edit-account").forEach(btn => {
       btn.addEventListener("click", () => {
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         openEditAccount(idx);
       });
     });
 
-    document.querySelectorAll(".btn-delete-account").forEach((btn) => {
+    document.querySelectorAll(".btn-delete-account").forEach(btn => {
       btn.addEventListener("click", () => {
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         const acc = accounts[idx];
@@ -2163,7 +2168,7 @@
     optNone.textContent = "(No linked employee)";
     accountEmployeeSelect.appendChild(optNone);
 
-    users.forEach((u) => {
+    users.forEach(u => {
       const opt = document.createElement("option");
       opt.value = u.name;
       opt.textContent = u.name;
@@ -2179,6 +2184,7 @@
     accountEmployeeSelect = document.getElementById("account-employee");
     accountRoleSelect = document.getElementById("account-role");
     accountStatusSelect = document.getElementById("account-status");
+    accountPasswordInput = document.getElementById("account-password");
 
     fillAccountEmployeeOptions();
 
@@ -2195,11 +2201,12 @@
         accountForm.reset();
         fillAccountEmployeeOptions();
         accountStatusSelect.value = "Active";
+        accountPasswordInput.value = "";
         accountModal.show();
       });
     }
 
-    accountForm.addEventListener("submit", (e) => {
+    accountForm.addEventListener("submit", e => {
       e.preventDefault();
 
       const accLogged = getLoggedInAccount();
@@ -2212,22 +2219,27 @@
       const employeeName = accountEmployeeSelect.value || "";
       const role = accountRoleSelect.value || "User";
       const status = accountStatusSelect.value || "Active";
+      const rawPassword = (accountPasswordInput.value || "").trim();
       if (!username) return;
 
       if (isEditAccount && editingAccountIndex !== null) {
+        const existing = accounts[editingAccountIndex];
         accounts[editingAccountIndex] = {
-          ...accounts[editingAccountIndex],
+          ...existing,
           username,
           employeeName,
           role,
           status,
+          password: rawPassword ? rawPassword : existing.password,
         };
       } else {
-        accounts.push({ username, employeeName, role, status, password: "1234" });
+        const password = rawPassword || "1234";
+        accounts.push({ username, employeeName, role, status, password });
       }
       saveAccounts();
       renderAccounts();
       refreshActiveAccountSelect();
+      accountPasswordInput.value = "";
       accountModal.hide();
     });
   }
@@ -2249,6 +2261,7 @@
     accountEmployeeSelect.value = acc.employeeName || "";
     accountRoleSelect.value = acc.role || "User";
     accountStatusSelect.value = acc.status || "Active";
+    accountPasswordInput.value = ""; // لا نعرض كلمة المرور الحالية، فقط نسمح بالتغيير
     accountModal.show();
   }
 
@@ -2308,7 +2321,7 @@
 
     if (!loginForm) return;
 
-    loginForm.addEventListener("submit", (e) => {
+    loginForm.addEventListener("submit", e => {
       e.preventDefault();
       const username = loginUserInput.value.trim();
       const password = loginPassInput.value;
@@ -2409,7 +2422,7 @@
       input.click();
     });
 
-    input.addEventListener("change", async (e) => {
+    input.addEventListener("change", async e => {
       const file = e.target.files[0];
       if (!file) return;
 
