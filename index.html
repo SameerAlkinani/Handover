@@ -173,7 +173,7 @@
       padding: 1rem 1.1rem;
     }
 
-    /* 7 filters on one line on desktop */
+    /* 7 filters in one line on desktop */
     .filters-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1227,7 +1227,8 @@
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const canEdit = canEditHandover(h);
 
-      const isAssignedToUser = empName && h.to === empName;
+      // NOW badge is based on Action By
+      const isAssignedToUser = empName && h.actionBy === empName;
 
       let actionsHtml = `
         <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
@@ -1246,19 +1247,19 @@
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
         <td>${h.from}</td>
+        <td>${h.to}</td>
+        <td>${h.items}</td>
+        <td>${h.priority || "-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date}</td>
         <td>
-          ${h.to}
+          ${h.actionBy || ""}
           ${
             isAssignedToUser
               ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>`
               : ""
           }
         </td>
-        <td>${h.items}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td>${h.actionBy || ""}</td>
         <td>
           ${
             linkUrl
@@ -1300,24 +1301,24 @@
 
     completed.forEach((h) => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-      const isAssignedToUser = empName && h.to === empName;
+      const isAssignedToUser = empName && h.actionBy === empName;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
         <td>${h.from}</td>
+        <td>${h.to}</td>
+        <td>${h.items}</td>
+        <td>${h.priority || "-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date}</td>
         <td>
-          ${h.to}
+          ${h.actionBy || ""}
           ${
             isAssignedToUser
               ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>`
               : ""
           }
         </td>
-        <td>${h.items}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td>${h.actionBy || ""}</td>
         <td>
           ${
             linkUrl
