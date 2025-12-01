@@ -307,7 +307,8 @@
     </form>
     <div class="mt-3 text-muted small text-center">
       Use a username from <strong>Users (Admin)</strong>.<br/>
-      Password is set by the <strong>Admin</strong> for each account (initial default is <strong>1234</strong> for new accounts).
+      Password is set by the <strong>Admin</strong> for each account.<br/>
+      For a new account with empty password, the default is <strong>1234</strong>.
     </div>
   </div>
 </div>
@@ -961,7 +962,9 @@
               placeholder="Leave blank to keep current password"
             />
             <div class="form-text">
-              Only Admin can set or change passwords for user accounts.
+              Only Admin can set or change passwords for user accounts.<br>
+              When editing: leaving this field empty keeps the current password.<br>
+              When adding a new account: if left empty, the default password will be <strong>1234</strong>.
             </div>
           </div>
           <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
@@ -2261,7 +2264,7 @@
     accountEmployeeSelect.value = acc.employeeName || "";
     accountRoleSelect.value = acc.role || "User";
     accountStatusSelect.value = acc.status || "Active";
-    accountPasswordInput.value = ""; // لا نعرض كلمة المرور الحالية، فقط نسمح بالتغيير
+    accountPasswordInput.value = ""; // do not show current password, allow change only
     accountModal.show();
   }
 
