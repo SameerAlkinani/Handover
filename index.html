@@ -36,6 +36,25 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
+    /* ===== Login Page (full screen) ===== */
+    #login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-color);
+      padding: 1rem;
+    }
+
+    .login-card {
+      max-width: 420px;
+      width: 100%;
+      border-radius: 1rem;
+      border: 1px solid #e1e4eb;
+      background: #fff;
+    }
+
+    /* ===== App Shell (unchanged platform) ===== */
     .app-shell {
       min-height: 100vh;
       display: flex;
@@ -271,7 +290,32 @@
   </style>
 </head>
 <body>
-<div class="app-shell">
+
+<!-- ===== Login Page (Option A) ===== -->
+<div id="login-page">
+  <div class="login-card shadow-sm p-4">
+    <h4 class="mb-3 text-center">Warehouse Handover Login</h4>
+    <form id="login-form">
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" id="login-username" class="form-control" autocomplete="username" required />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" id="login-password" class="form-control" autocomplete="current-password" required />
+      </div>
+      <div id="login-error" class="text-danger small mb-2" style="display:none;"></div>
+      <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+    <div class="mt-3 text-muted small text-center">
+      Use a username from <strong>Users (Admin)</strong>.<br/>
+      Default password for all accounts: <strong>1234</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- ===== App Shell (unchanged platform layout) ===== -->
+<div id="app-shell" class="app-shell" style="display:none;">
   <!-- Sidebar -->
   <aside class="sidebar">
     <div>
@@ -308,7 +352,7 @@
       </nav>
     </div>
     <div class="sidebar-footer">
-      v1.0 – No login required
+      v1.0 – Login enabled
     </div>
   </aside>
 
@@ -912,8 +956,8 @@
             </select>
           </div>
           <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
-            Passwords are not stored in this prototype.  
-            This page is only to design and plan user accounts.
+            Passwords are stored only in this browser (prototype).  
+            Exported JSON does not include passwords for safety.
           </div>
         </div>
         <div class="modal-footer">
@@ -978,12 +1022,14 @@
     },
   ];
 
+  // default accounts now include a password (stored only locally)
   const defaultAccounts = [
     {
       username: "admin",
       employeeName: "Sameer Jabbar",
       role: "Admin",
       status: "Active",
+      password: "1234",
     },
   ];
 
@@ -1013,7 +1059,7 @@
   let isEditAccount = false;
   let editingAccountIndex = null;
 
-  // active platform account
+  // active platform account + logged in account
   let activeAccountUsername = null;
 
   // ===== LocalStorage helpers =====
@@ -1052,6 +1098,15 @@
     localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
   }
 
+  function normalizeAccountsPasswords() {
+    // ensure each account has a password; default to 1234 if missing
+    accounts.forEach(acc => {
+      if (typeof acc.password === "undefined" || acc.password === null) {
+        acc.password = "1234";
+      }
+    });
+  }
+
   function loadAccounts() {
     const saved = localStorage.getItem("warehouseAccounts");
     if (saved) {
@@ -1063,9 +1118,11 @@
     } else {
       accounts = [...defaultAccounts];
     }
+    normalizeAccountsPasswords();
   }
 
   function saveAccounts() {
+    normalizeAccountsPasswords();
     localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
   }
 
@@ -1078,6 +1135,18 @@
       localStorage.setItem("warehouseActiveAccountUsername", activeAccountUsername);
     } else {
       localStorage.removeItem("warehouseActiveAccountUsername");
+    }
+  }
+
+  function getLoggedInUsername() {
+    return localStorage.getItem("warehouseLoggedInAccountUsername") || "";
+  }
+
+  function setLoggedInUsername(username) {
+    if (username) {
+      localStorage.setItem("warehouseLoggedInAccountUsername", username);
+    } else {
+      localStorage.removeItem("warehouseLoggedInAccountUsername");
     }
   }
 
@@ -1412,7 +1481,7 @@
 
     const ws = XLSX.utils.json_to_sheet(data);
 
-    // Hyperlinks
+    // Hyperlinks in "Attachment Link" column
     if (ws["!ref"]) {
       const range = XLSX.utils.decode_range(ws["!ref"]);
       let linkColIndex = null;
@@ -1525,10 +1594,10 @@
 
     select.value = currentValue;
 
-    select.addEventListener("change", () => {
+    select.onchange = () => {
       activeAccountUsername = select.value || "";
       saveActiveAccount();
-    });
+    };
   }
 
   // ===== Handover Modal =====
@@ -1919,9 +1988,9 @@
       if (!username) return;
 
       if (isEditAccount && editingAccountIndex !== null) {
-        accounts[editingAccountIndex] = { username, employeeName, role, status };
+        accounts[editingAccountIndex] = { ...accounts[editingAccountIndex], username, employeeName, role, status };
       } else {
-        accounts.push({ username, employeeName, role, status });
+        accounts.push({ username, employeeName, role, status, password: "1234" });
       }
       saveAccounts();
       renderAccounts();
@@ -1943,16 +2012,107 @@
     accountModal.show();
   }
 
+  // ===== Login Handling =====
+  function validateLogin(username, password) {
+    normalizeAccountsPasswords();
+    const acc = accounts.find(a => a.username === username);
+    if (!acc) {
+      return { ok: false, message: "Invalid username or password." };
+    }
+    if (acc.status === "Disabled") {
+      return { ok: false, message: "This account is disabled." };
+    }
+    if (acc.password !== password) {
+      return { ok: false, message: "Invalid username or password." };
+    }
+    return { ok: true, account: acc };
+  }
+
+  function showLoginPage() {
+    const loginPageEl = document.getElementById("login-page");
+    const appShellEl = document.getElementById("app-shell");
+    if (loginPageEl) loginPageEl.style.display = "flex";
+    if (appShellEl) appShellEl.style.display = "none";
+  }
+
+  function showApp() {
+    const loginPageEl = document.getElementById("login-page");
+    const appShellEl = document.getElementById("app-shell");
+    if (loginPageEl) loginPageEl.style.display = "none";
+    if (appShellEl) appShellEl.style.display = "flex";
+
+    // make sure active account dropdown reflects logged in user
+    refreshActiveAccountSelect();
+    const select = document.getElementById("active-account-select");
+    if (select && activeAccountUsername) {
+      select.value = activeAccountUsername;
+    }
+  }
+
+  function initLogin() {
+    const loginForm = document.getElementById("login-form");
+    const loginUserInput = document.getElementById("login-username");
+    const loginPassInput = document.getElementById("login-password");
+    const loginErrorEl = document.getElementById("login-error");
+
+    if (!loginForm) return;
+
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = loginUserInput.value.trim();
+      const password = loginPassInput.value;
+
+      const result = validateLogin(username, password);
+      if (!result.ok) {
+        loginErrorEl.textContent = result.message;
+        loginErrorEl.style.display = "block";
+        return;
+      }
+
+      // success
+      loginErrorEl.style.display = "none";
+      activeAccountUsername = result.account.username;
+      saveActiveAccount();
+      setLoggedInUsername(activeAccountUsername);
+      showApp();
+    });
+
+    // try auto-login if there is a stored logged in user
+    const storedLogin = getLoggedInUsername();
+    if (storedLogin) {
+      const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
+      if (acc) {
+        activeAccountUsername = storedLogin;
+        saveActiveAccount();
+        showApp();
+        return;
+      } else {
+        setLoggedInUsername("");
+      }
+    }
+
+    // if no valid session, show login
+    showLoginPage();
+  }
+
   // ===== Export JSON =====
   function initExportJson() {
     const btn = document.getElementById("btn-export-json");
     if (!btn) return;
     btn.addEventListener("click", () => {
+      // For safety, do not export passwords
+      const accountsExport = accounts.map(acc => ({
+        username: acc.username,
+        employeeName: acc.employeeName,
+        role: acc.role,
+        status: acc.status,
+      }));
+
       const data = {
         exportedAt: new Date().toISOString(),
         handovers,
         users,
-        accounts,
+        accounts: accountsExport,
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
@@ -2011,6 +2171,7 @@
         handovers = data.handovers;
         users = data.users;
         accounts = data.accounts;
+        normalizeAccountsPasswords();
 
         saveHandovers();
         saveUsers();
@@ -2092,6 +2253,9 @@
 
     const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
     setActiveView(savedView, false);
+
+    // finally, init login logic (this will decide whether to show login or app)
+    initLogin();
   });
 </script>
 </body>
