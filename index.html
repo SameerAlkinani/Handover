@@ -1036,6 +1036,101 @@
 <script>
   const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
 
+  /* ===== مزامنة البيانات مع ملف JSON على السيرفر (مشترك لكل الأجهزة) ===== */
+  const SERVER_SYNC_ENABLED = true;
+  const SERVER_API_URL = "warehouse_api.php"; // تأكد أن الاسم يطابق ملف الـ PHP
+
+  // قراءة كل البيانات من localStorage لتُرسل إلى السيرفر
+  function getLocalSnapshotForServer() {
+    let usersData = [];
+    let handoversData = [];
+    let deletedHandoversData = [];
+    let accountsData = [];
+    let lastSerial = 0;
+
+    try {
+      const u = localStorage.getItem("warehouseUsers");
+      if (u) usersData = JSON.parse(u);
+    } catch (e) {}
+
+    try {
+      const h = localStorage.getItem("warehouseHandovers");
+      if (h) handoversData = JSON.parse(h);
+    } catch (e) {}
+
+    try {
+      const dh = localStorage.getItem("warehouseDeletedHandovers");
+      if (dh) deletedHandoversData = JSON.parse(dh);
+    } catch (e) {}
+
+    try {
+      const a = localStorage.getItem("warehouseAccounts");
+      if (a) accountsData = JSON.parse(a);
+    } catch (e) {}
+
+    try {
+      const s = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
+      const n = parseInt(s, 10);
+      if (!isNaN(n)) lastSerial = n;
+    } catch (e) {}
+
+    return {
+      users: usersData,
+      handovers: handoversData,
+      deletedHandovers: deletedHandoversData,
+      accounts: accountsData,
+      lastSerial: lastSerial,
+    };
+  }
+
+  // إرسال snapshot إلى السيرفر
+  async function syncLocalToServer() {
+    if (!SERVER_SYNC_ENABLED) return;
+    try {
+      const snapshot = getLocalSnapshotForServer();
+      await fetch(SERVER_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(snapshot),
+      });
+    } catch (e) {
+      console.error("Server sync (POST) failed:", e);
+    }
+  }
+
+  // في أول تشغيل: سحب البيانات من السيرفر إلى localStorage
+  async function initialSyncFromServer() {
+    if (!SERVER_SYNC_ENABLED) return;
+    try {
+      const res = await fetch(SERVER_API_URL + "?t=" + Date.now(), {
+        method: "GET",
+      });
+      if (!res.ok) {
+        console.warn("Server sync (GET) HTTP error:", res.status);
+        return;
+      }
+      const data = await res.json();
+
+      if (Array.isArray(data.users)) {
+        localStorage.setItem("warehouseUsers", JSON.stringify(data.users));
+      }
+      if (Array.isArray(data.handovers)) {
+        localStorage.setItem("warehouseHandovers", JSON.stringify(data.handovers));
+      }
+      if (Array.isArray(data.deletedHandovers)) {
+        localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(data.deletedHandovers));
+      }
+      if (Array.isArray(data.accounts)) {
+        localStorage.setItem("warehouseAccounts", JSON.stringify(data.accounts));
+      }
+      if (typeof data.lastSerial === "number") {
+        localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(data.lastSerial));
+      }
+    } catch (e) {
+      console.error("Server sync (GET) failed:", e);
+    }
+  }
+
   // مفتاح التخزين للتسلسل (رقم واحد عام)
   const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
 
@@ -1050,13 +1145,14 @@
     }
   }
 
-  // حفظ آخر تسلسل
+  // حفظ آخر تسلسل + مزامنة
   function saveIdCounter(last) {
     try {
       localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0));
     } catch (e) {
       // ignore
     }
+    syncLocalToServer();
   }
 
   // إعادة تسلسل قائمة معيّنة حسب ترتيبها (تستخدم التاريخ داخل كل عنصر)
@@ -1204,6 +1300,7 @@
 
   function saveUsers() {
     localStorage.setItem("warehouseUsers", JSON.stringify(users));
+    syncLocalToServer();
   }
 
   function loadHandovers() {
@@ -1222,6 +1319,7 @@
 
   function saveHandovers() {
     localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
+    syncLocalToServer();
   }
 
   function loadDeletedHandovers() {
@@ -1239,6 +1337,7 @@
 
   function saveDeletedHandovers() {
     localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers));
+    syncLocalToServer();
   }
 
   function normalizeAccountsPasswords() {
@@ -1266,6 +1365,7 @@
   function saveAccounts() {
     normalizeAccountsPasswords();
     localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
+    syncLocalToServer();
   }
 
   function loadActiveAccount() {
@@ -2772,7 +2872,10 @@
   }
 
   // ===== DOMContentLoaded =====
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
+    // أولاً: نسحب آخر نسخة بيانات من السيرفر (مشتركة لجميع الأجهزة)
+    await initialSyncFromServer();
+
     document
       .getElementById("filter-from")
       .addEventListener("change", applyFilters);
@@ -2808,7 +2911,7 @@
     loadHandovers();
     loadDeletedHandovers();
 
-    // هنا يتم إعادة تسلسل كل المهام الحالية لتبدأ من 1 حسب التاريخ
+    // إعادة تسلسل IDs (نفس السلوك القديم)
     resequenceAllHandoverIdsFromOne();
     saveHandovers();
     saveDeletedHandovers();
