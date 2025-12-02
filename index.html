@@ -307,8 +307,7 @@
     </form>
     <div class="mt-3 text-muted small text-center">
       Use a username from <strong>Users (Admin)</strong>.<br/>
-      Password is set by the <strong>Admin</strong> for each account.<br/>
-      For a new account with empty password, the default is <strong>1234</strong>.
+      Password is set by the <strong>Admin</strong> for each account (initial default is <strong>1234</strong> for new accounts).
     </div>
   </div>
 </div>
@@ -336,6 +335,11 @@
           <i class="bi bi-box-seam"></i>
           <span>Handovers</span>
         </a>
+        <!-- Deleted handovers page -->
+        <a href="#" class="nav-link" data-view="deleted-handovers">
+          <i class="bi bi-trash3"></i>
+          <span>Deleted Handovers</span>
+        </a>
         <a href="#" class="nav-link" data-view="warehouses">
           <i class="bi bi-buildings"></i>
           <span>Warehouses</span>
@@ -355,7 +359,7 @@
       <button class="btn btn-sm btn-outline-light w-100 mb-2" id="btn-logout">
         <i class="bi bi-box-arrow-right"></i> Logout
       </button>
-      <div style="font-size:0.75rem;color:#9fb3ff;">v1.3 – Role-based access</div>
+      <div style="font-size:0.75rem;color:#9fb3ff;">v1.4 – Deleted & Restore</div>
     </div>
   </aside>
 
@@ -522,7 +526,7 @@
                   <th>DATE</th>
                   <th>ACTION BY</th>
                   <th>ATTACHMENT</th>
-                  <th style="width: 90px;">ACTIONS</th>
+                  <th style="width: 120px;">ACTIONS</th>
                 </tr>
                 </thead>
                 <tbody id="handover-tbody">
@@ -566,10 +570,49 @@
               <th>DATE</th>
               <th>ACTION BY</th>
               <th>ATTACHMENT</th>
-              <th style="width: 90px;">ACTIONS</th>
+              <th style="width: 120px;">ACTIONS</th>
             </tr>
             </thead>
             <tbody id="completed-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- DELETED HANDOVERS VIEW -->
+    <section class="view-section d-none" data-view="deleted-handovers">
+      <div class="top-bar mb-3">
+        <div>
+          <div class="top-bar-title">Deleted Handovers</div>
+          <div style="font-size: 0.85rem; color: #6b7280">
+            Handovers deleted by Admin. You can restore them back to the main list.
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Deleted Handovers</h6>
+          <span id="deleted-count" style="font-size: 0.8rem; color: #6b7280"></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+            <tr>
+              <th>HNDR ID</th>
+              <th>FROM</th>
+              <th>TO</th>
+              <th>ITEMS</th>
+              <th>PRIORITY</th>
+              <th>STATUS</th>
+              <th>DATE</th>
+              <th>ACTION BY</th>
+              <th>ATTACHMENT</th>
+              <th style="width: 90px;">ACTIONS</th>
+            </tr>
+            </thead>
+            <tbody id="deleted-handover-tbody">
             </tbody>
           </table>
         </div>
@@ -962,9 +1005,7 @@
               placeholder="Leave blank to keep current password"
             />
             <div class="form-text">
-              Only Admin can set or change passwords for user accounts.<br>
-              When editing: leaving this field empty keeps the current password.<br>
-              When adding a new account: if left empty, the default password will be <strong>1234</strong>.
+              Only Admin can set or change passwords for user accounts.
             </div>
           </div>
           <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
@@ -995,21 +1036,97 @@
 <script>
   const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
 
+  // مفتاح التخزين للتسلسل (رقم واحد عام)
+  const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
+
+  // قراءة آخر تسلسل من التخزين
+  function loadIdCounter() {
+    try {
+      const stored = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
+      const num = parseInt(stored, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // حفظ آخر تسلسل
+  function saveIdCounter(last) {
+    try {
+      localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0));
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // إعادة تسلسل قائمة معيّنة حسب ترتيبها (تستخدم التاريخ داخل كل عنصر)
+  // تسلسل واحد مستمر حتى لو اختلف الشهر
+  function normalizeIdsForList(list, lastSerial) {
+    if (!Array.isArray(list) || list.length === 0) return lastSerial;
+
+    let counter = typeof lastSerial === "number" ? lastSerial : 0;
+
+    list.forEach(h => {
+      if (!h) return;
+
+      let yy, mm;
+      const dateStr = h.date || "";
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+      if (m) {
+        yy = m[1].slice(-2); // آخر رقمين من السنة
+        mm = m[2];           // الشهر بصيغة 01–12
+      } else {
+        const today = new Date();
+        yy = String(today.getFullYear()).slice(-2);
+        mm = String(today.getMonth() + 1).padStart(2, "0");
+      }
+
+      counter += 1;
+      const serial = String(counter).padStart(4, "0"); // 1 → 0001
+      h.id = `HNDR-${yy}-${mm}-${serial}`;
+    });
+
+    return counter;
+  }
+
+  // إعادة تسلسل كل المهام الموجودة حالياً (handovers + deletedHandovers)
+  // بحيث تبدأ من 0001 حسب التاريخ
+  function resequenceAllHandoverIdsFromOne() {
+    const all = [...handovers, ...deletedHandovers];
+    if (all.length === 0) {
+      saveIdCounter(0);
+      return;
+    }
+
+    // ترتيب حسب التاريخ تصاعدياً، ثم حسب الـ id الحالي كاحتياط
+    all.sort((a, b) => {
+      const da = a.date || "";
+      const db = b.date || "";
+      if (da && db && da !== db) return da.localeCompare(db);
+      return (a.id || "").localeCompare(b.id || "");
+    });
+
+    let lastSerial = 0;
+    lastSerial = normalizeIdsForList(all, lastSerial);
+    saveIdCounter(lastSerial);
+  }
+
   const defaultUsers = [
     { name: "Sameer Jabbar",       role: "Manager",    email: "sameer_jabbar@yahoo.com" },
     { name: "Ardasher A. Ahmad",   role: "Supervisor", email: "" },
   ];
 
+  // افتراضياً التاريخ في شهر 9 / 2025 حتى يكون أول تسلسل من هناك
   const defaultHandovers = [
     {
-      id: "HNDR-001",
+      id: "HNDR-25-09-0001",
       from: "Sameer Jabbar",
       to: "Ardasher A. Ahmad",
       items: "120 cartons of Product A",
       longDescription: "",
       priority: "P1",
       status: "Pending",
-      date: "2025-11-20",
+      date: "2025-09-20",
       actionBy: "Sameer Jabbar",
       attachmentName: null,
       attachmentType: null,
@@ -1017,14 +1134,14 @@
       attachmentDataUrl: null,
     },
     {
-      id: "HNDR-002",
+      id: "HNDR-25-09-0002",
       from: "Ardasher A. Ahmad",
       to: "Sameer Jabbar",
       items: "80 pallets of Product B",
       longDescription: "",
       priority: "P2",
       status: "In Progress",
-      date: "2025-11-21",
+      date: "2025-09-21",
       actionBy: "Ardasher A. Ahmad",
       attachmentName: null,
       attachmentType: null,
@@ -1045,6 +1162,7 @@
 
   let handovers = [];
   let filteredHandovers = [];
+  let deletedHandovers = [];
   let users = [];
   let accounts = [];
 
@@ -1104,6 +1222,23 @@
 
   function saveHandovers() {
     localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
+  }
+
+  function loadDeletedHandovers() {
+    const saved = localStorage.getItem("warehouseDeletedHandovers");
+    if (saved) {
+      try {
+        deletedHandovers = JSON.parse(saved);
+      } catch {
+        deletedHandovers = [];
+      }
+    } else {
+      deletedHandovers = [];
+    }
+  }
+
+  function saveDeletedHandovers() {
+    localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers));
   }
 
   function normalizeAccountsPasswords() {
@@ -1182,12 +1317,10 @@
 
     return handovers.filter(h => {
       const actionByName = (h.actionBy || "").trim();
-      const toName = (h.to || "").trim();
-      return actionByName === empName || toName === empName;
+      return actionByName === empName;
     });
   }
 
-  // User can edit if he is actionBy OR To (besides admin/supervisor)
   function canEditHandover(h) {
     const acc = getLoggedInAccount();
     if (!acc) return false;
@@ -1199,19 +1332,24 @@
     if (acc.role === "User") {
       return h.actionBy === empName || h.to === empName;
     }
-    return false; // Viewer
+    return false;
   }
 
+  // توليد ID جديد للتسليم التالي (يعتمد على التسلسل المخزَّن)
   function generateNextId() {
-    if (handovers.length === 0) return "HNDR-001";
-    let maxNum = 0;
-    handovers.forEach(h => {
-      const parts = String(h.id).split("-");
-      const num = parseInt(parts[1] || "0", 10);
-      if (!isNaN(num) && num > maxNum) maxNum = num;
-    });
-    const next = maxNum + 1;
-    return "HNDR-" + String(next).padStart(3, "0");
+    const today = new Date();
+    const year = String(today.getFullYear()).slice(-2);
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+
+    let lastSerial = loadIdCounter();
+    if (typeof lastSerial !== "number" || isNaN(lastSerial)) {
+      lastSerial = 0;
+    }
+    lastSerial += 1;
+    saveIdCounter(lastSerial);
+
+    const serial = String(lastSerial).padStart(4, "0");
+    return `HNDR-${year}-${month}-${serial}`;
   }
 
   function getStatusClass(status) {
@@ -1236,6 +1374,7 @@
 
     const acc = getLoggedInAccount();
     const empName = acc?.employeeName?.trim() || "";
+    const isAdmin = acc && acc.role === "Admin";
 
     filteredHandovers.forEach(h => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
@@ -1252,6 +1391,14 @@
         actionsHtml += `
           <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
             <i class="bi bi-check2"></i>
+          </button>
+        `;
+      }
+
+      if (isAdmin) {
+        actionsHtml += `
+          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+            <i class="bi bi-trash"></i>
           </button>
         `;
       }
@@ -1311,10 +1458,26 @@
 
     const acc = getLoggedInAccount();
     const empName = acc?.employeeName?.trim() || "";
+    const isAdmin = acc && acc.role === "Admin";
 
     completed.forEach(h => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const isAssignedToUser = empName && h.actionBy === empName;
+
+      let actionsHtml = `
+        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
+          <i class="bi bi-eye"></i>
+        </button>
+      `;
+
+      if (isAdmin) {
+        actionsHtml += `
+          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+            <i class="bi bi-trash"></i>
+          </button>
+        `;
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
@@ -1345,11 +1508,7 @@
               : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
           }
         </td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
-            <i class="bi bi-eye"></i>
-          </button>
-        </td>
+        <td>${actionsHtml}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1357,6 +1516,63 @@
     if (countEl) {
       countEl.textContent = completed.length + " records";
     }
+  }
+
+  function renderDeletedHandovers() {
+    const tbody = document.getElementById("deleted-handover-tbody");
+    const countEl = document.getElementById("deleted-count");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    const acc = getLoggedInAccount();
+    const isAdmin = acc && acc.role === "Admin";
+
+    deletedHandovers.forEach(h => {
+      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+
+      let actionsHtml = "";
+      if (isAdmin) {
+        actionsHtml = `
+          <button class="btn btn-sm btn-outline-success btn-restore-handover" data-id="${h.id}" title="Restore">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+        `;
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><span class="fw-semibold">${h.id}</span></td>
+        <td>${h.from}</td>
+        <td>${h.to}</td>
+        <td>${h.items}</td>
+        <td>${h.priority || "-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date}</td>
+        <td>${h.actionBy || ""}</td>
+        <td>
+          ${
+            linkUrl
+              ? `<a href="${linkUrl}"
+                     target="_blank"
+                     class="btn btn-sm btn-outline-primary"
+                     title="${h.attachmentName || "Attachment"}"
+                     download="${h.attachmentName || "attachment"}">
+                   <i class="bi bi-paperclip"></i>
+                 </a>`
+              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+          }
+        </td>
+        <td>${actionsHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (countEl) {
+      countEl.textContent = deletedHandovers.length + " records";
+    }
+
+    attachDeletedRowActions();
   }
 
   function attachRowActions() {
@@ -1379,6 +1595,61 @@
         h.status = "Completed";
         saveHandovers();
         applyFilters();
+      });
+    });
+
+    document.querySelectorAll(".btn-delete-handover").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const acc = getLoggedInAccount();
+        if (!acc || acc.role !== "Admin") {
+          alert("Only Admin can delete handovers.");
+          return;
+        }
+        const id = btn.getAttribute("data-id");
+        const h = handovers.find(x => x.id === id);
+        if (!h) return;
+
+        const ok = confirm(`Are you sure you want to delete handover "${h.id}"?`);
+        if (!ok) return;
+
+        handovers = handovers.filter(x => x.id !== id);
+        deletedHandovers.push(h);
+
+        saveHandovers();
+        saveDeletedHandovers();
+
+        applyFilters();
+        renderDeletedHandovers();
+      });
+    });
+  }
+
+  function attachDeletedRowActions() {
+    document.querySelectorAll(".btn-restore-handover").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const acc = getLoggedInAccount();
+        if (!acc || acc.role !== "Admin") {
+          alert("Only Admin can restore handovers.");
+          return;
+        }
+
+        const id = btn.getAttribute("data-id");
+        const idx = deletedHandovers.findIndex(h => h.id === id);
+        if (idx === -1) return;
+
+        const h = deletedHandovers[idx];
+        const ok = confirm(`Restore handover "${h.id}" back to main list?`);
+        if (!ok) return;
+
+        deletedHandovers.splice(idx, 1);
+        handovers.push(h);
+
+        saveHandovers();
+        saveDeletedHandovers();
+
+        filteredHandovers = getVisibleHandovers();
+        applyFilters();
+        renderDeletedHandovers();
       });
     });
   }
@@ -1655,7 +1926,7 @@
     fillAccountEmployeeOptions();
   }
 
-  // === Restrict From (new handover) to logged-in employee ===
+  // From (new handover) limited to logged-in employee
   function setupFromForNewHandover() {
     if (!inputFrom) return;
 
@@ -1708,7 +1979,6 @@
     };
   }
 
-  // From always disabled (read-only)
   function setHandoverFormReadOnly(readOnly) {
     const fields = [
       inputTo,
@@ -1971,10 +2241,10 @@
     const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
     const views = document.querySelectorAll(".view-section");
 
-    if (view === "admin-users") {
+    if (view === "admin-users" || view === "deleted-handovers") {
       const acc = getLoggedInAccount();
       if (!acc || acc.role !== "Admin") {
-        alert("Only Admin can access Users (Admin) page.");
+        alert("Only Admin can access this page.");
         return;
       }
     }
@@ -2264,7 +2534,7 @@
     accountEmployeeSelect.value = acc.employeeName || "";
     accountRoleSelect.value = acc.role || "User";
     accountStatusSelect.value = acc.status || "Active";
-    accountPasswordInput.value = ""; // do not show current password, allow change only
+    accountPasswordInput.value = "";
     accountModal.show();
   }
 
@@ -2346,6 +2616,7 @@
       renderTable();
       renderAccounts();
       renderReports();
+      renderDeletedHandovers();
       const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
       setActiveView(savedView, false);
     });
@@ -2361,6 +2632,7 @@
         renderTable();
         renderAccounts();
         renderReports();
+        renderDeletedHandovers();
         const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
         setActiveView(savedView, false);
         return;
@@ -2459,9 +2731,11 @@
         accounts = data.accounts;
         normalizeAccountsPasswords();
 
+        // إعادة تسلسل لكل المهام المستوردة لتبدأ من 1 حسب التاريخ
+        deletedHandovers = []; // في ملف الاستيراد الحالي لا نملك deleted، إن وجدت يمكنك إضافتها
+        resequenceAllHandoverIdsFromOne();
         saveHandovers();
-        saveUsers();
-        saveAccounts();
+        saveDeletedHandovers();
 
         filteredHandovers = getVisibleHandovers();
 
@@ -2471,6 +2745,7 @@
         renderAccounts();
         renderReports();
         refreshActiveAccountSelect();
+        renderDeletedHandovers();
 
         alert("Data imported successfully.");
       } catch (err) {
@@ -2531,6 +2806,13 @@
 
     loadUsers();
     loadHandovers();
+    loadDeletedHandovers();
+
+    // هنا يتم إعادة تسلسل كل المهام الحالية لتبدأ من 1 حسب التاريخ
+    resequenceAllHandoverIdsFromOne();
+    saveHandovers();
+    saveDeletedHandovers();
+
     loadAccounts();
     loadActiveAccount();
 
@@ -2550,6 +2832,7 @@
     initLogout();
 
     initLogin();
+    renderDeletedHandovers();
   });
 </script>
 </body>
