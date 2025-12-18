@@ -1109,14 +1109,22 @@
     return accounts.find(acc => acc.username === username) || null;
   }
 
+  // ✅✅✅ IMPORTANT CHANGE:
+  // الآن المستخدم يرى الهاندوفر الخاص به إذا كان: From أو To أو Action By
   function getVisibleHandovers() {
     const acc = getLoggedInAccount();
     if (!acc) return [];
+
     if (acc.role === "Admin" || acc.role === "Supervisor") return handovers;
 
-    const empName = acc.employeeName?.trim() || "";
+    const empName = (acc.employeeName || "").trim();
     if (!empName) return [];
-    return handovers.filter(h => (h.actionBy || "").trim() === empName);
+
+    return handovers.filter(h =>
+      (h.from || "").trim() === empName ||
+      (h.to || "").trim() === empName ||
+      (h.actionBy || "").trim() === empName
+    );
   }
 
   function canEditHandover(h) {
@@ -1167,7 +1175,10 @@
     filteredHandovers.forEach(h => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
       const canEdit = canEditHandover(h);
-      const isAssignedToUser = empName && h.actionBy === empName;
+
+      // ✅✅✅ IMPORTANT CHANGE:
+      // Assigned to you = أنت المستلم (To)
+      const isAssignedToUser = empName && (h.to || "").trim() === empName;
 
       let actionsHtml = `
         <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
@@ -1200,7 +1211,7 @@
         <td>${h.date}</td>
         <td>
           ${h.actionBy || ""}
-          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>` : ""}
+          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Assigned to you (To)">Assigned to you</span>` : ""}
         </td>
         <td>
           ${
@@ -1242,7 +1253,9 @@
 
     completed.forEach(h => {
       const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-      const isAssignedToUser = empName && h.actionBy === empName;
+
+      // ✅✅✅ IMPORTANT CHANGE:
+      const isAssignedToUser = empName && (h.to || "").trim() === empName;
 
       let actionsHtml = `
         <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
@@ -1268,7 +1281,7 @@
         <td>${h.date}</td>
         <td>
           ${h.actionBy || ""}
-          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>` : ""}
+          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Assigned to you (To)">Assigned to you</span>` : ""}
         </td>
         <td>
           ${
