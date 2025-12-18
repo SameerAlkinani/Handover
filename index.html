@@ -1,1663 +1,1695 @@
 <script>
-  const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
+/* =========================
+   Warehouse Handover Script
+   Stable + Safe + Attachments via Blob
+   ========================= */
 
-  // Storage key for the global serial counter
-  const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
+const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
+const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
 
-  // Load last serial from storage
-  function loadIdCounter() {
-    try {
-      const stored = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
-      const num = parseInt(stored, 10);
-      return isNaN(num) ? 0 : num;
-    } catch (e) {
-      return 0;
-    }
+/* ===== Defaults ===== */
+const defaultUsers = [
+  { name: "Sameer Jabbar", role: "Manager", email: "sameer_jabbar@yahoo.com" },
+  { name: "Ardasher A. Ahmad", role: "Supervisor", email: "" },
+];
+
+const defaultHandovers = [
+  {
+    id: "HNDR-25-09-0001",
+    from: "Sameer Jabbar",
+    to: "Ardasher A. Ahmad",
+    items: "120 cartons of Product A",
+    longDescription: "",
+    priority: "P1",
+    status: "Pending",
+    date: "2025-09-20",
+    actionBy: "Sameer Jabbar",
+    attachmentName: null,
+    attachmentType: null,
+    attachmentSize: null,
+    attachmentDataUrl: null,
+  },
+  {
+    id: "HNDR-25-09-0002",
+    from: "Ardasher A. Ahmad",
+    to: "Sameer Jabbar",
+    items: "80 pallets of Product B",
+    longDescription: "",
+    priority: "P2",
+    status: "In Progress",
+    date: "2025-09-21",
+    actionBy: "Ardasher A. Ahmad",
+    attachmentName: null,
+    attachmentType: null,
+    attachmentSize: null,
+    attachmentDataUrl: null,
+  },
+];
+
+const defaultAccounts = [
+  {
+    username: "Admin",
+    employeeName: "Sameer Jabbar",
+    role: "Admin",
+    status: "Active",
+    password: "1234",
+  },
+];
+
+/* ===== State ===== */
+let handovers = [];
+let filteredHandovers = [];
+let deletedHandovers = [];
+let users = [];
+let accounts = [];
+
+let reportsStatusChart = null;
+let reportsUserChart = null;
+
+let isEditMode = false;
+let editingId = null;
+let editingReadOnly = false;
+
+let editingUserIndex = null;
+
+let userModal = null;
+let userEditForm = null;
+let editUserNameInput = null;
+let editUserRoleInput = null;
+let editUserEmailInput = null;
+
+let handoverModal = null;
+let handoverForm = null;
+let inputId, inputFrom, inputTo, inputItems, inputLongDesc, inputPriority,
+  inputStatus, inputDate, inputActionBy,
+  attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
+
+let accountModal = null;
+let accountForm = null;
+let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect, accountPasswordInput;
+let isEditAccount = false;
+let editingAccountIndex = null;
+
+let activeAccountUsername = null;
+
+/* =========================
+   Helpers (Safe DOM)
+   ========================= */
+function $(id) { return document.getElementById(id); }
+
+function on(id, event, handler) {
+  const el = $(id);
+  if (el) el.addEventListener(event, handler);
+}
+
+function text(id, value) {
+  const el = $(id);
+  if (el) el.textContent = value;
+}
+
+/* =========================
+   ID Counter / Resequence
+   ========================= */
+function loadIdCounter() {
+  try {
+    const stored = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
+    const num = parseInt(stored, 10);
+    return isNaN(num) ? 0 : num;
+  } catch (e) {
+    return 0;
   }
+}
 
-  // Save last serial
-  function saveIdCounter(last) {
-    try {
-      localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0));
-    } catch (e) {
-      // ignore
-    }
-  }
+function saveIdCounter(last) {
+  try {
+    localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0));
+  } catch (e) {}
+}
 
-  // Resequence a given list based on its order (uses the date field)
-  // One continuous serial even if the month changes
-  function normalizeIdsForList(list, lastSerial) {
-    if (!Array.isArray(list) || list.length === 0) return lastSerial;
+function normalizeIdsForList(list, lastSerial) {
+  if (!Array.isArray(list) || list.length === 0) return lastSerial;
 
-    let counter = typeof lastSerial === "number" ? lastSerial : 0;
+  let counter = typeof lastSerial === "number" ? lastSerial : 0;
 
-    list.forEach(h => {
-      if (!h) return;
-
-      let yy, mm;
-      const dateStr = h.date || "";
-      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
-      if (m) {
-        yy = m[1].slice(-2);
-        mm = m[2];
-      } else {
-        const today = new Date();
-        yy = String(today.getFullYear()).slice(-2);
-        mm = String(today.getMonth() + 1).padStart(2, "0");
-      }
-
-      counter += 1;
-      const serial = String(counter).padStart(4, "0");
-      h.id = `HNDR-${yy}-${mm}-${serial}`;
-    });
-
-    return counter;
-  }
-
-  // Resequence all current tasks (handovers + deletedHandovers) so they begin at 0001 ordered by date
-  function resequenceAllHandoverIdsFromOne() {
-    const all = [...handovers, ...deletedHandovers];
-    if (all.length === 0) {
-      saveIdCounter(0);
-      return;
-    }
-
-    all.sort((a, b) => {
-      const da = a.date || "";
-      const db = b.date || "";
-      if (da && db && da !== db) return da.localeCompare(db);
-      return (a.id || "").localeCompare(b.id || "");
-    });
-
-    let lastSerial = 0;
-    lastSerial = normalizeIdsForList(all, lastSerial);
-    saveIdCounter(lastSerial);
-  }
-
-  const defaultUsers = [
-    { name: "Sameer Jabbar", role: "Manager", email: "sameer_jabbar@yahoo.com" },
-    { name: "Ardasher A. Ahmad", role: "Supervisor", email: "" },
-  ];
-
-  const defaultHandovers = [
-    {
-      id: "HNDR-25-09-0001",
-      from: "Sameer Jabbar",
-      to: "Ardasher A. Ahmad",
-      items: "120 cartons of Product A",
-      longDescription: "",
-      priority: "P1",
-      status: "Pending",
-      date: "2025-09-20",
-      actionBy: "Sameer Jabbar",
-      attachmentName: null,
-      attachmentType: null,
-      attachmentSize: null,
-      attachmentDataUrl: null,
-    },
-    {
-      id: "HNDR-25-09-0002",
-      from: "Ardasher A. Ahmad",
-      to: "Sameer Jabbar",
-      items: "80 pallets of Product B",
-      longDescription: "",
-      priority: "P2",
-      status: "In Progress",
-      date: "2025-09-21",
-      actionBy: "Ardasher A. Ahmad",
-      attachmentName: null,
-      attachmentType: null,
-      attachmentSize: null,
-      attachmentDataUrl: null,
-    },
-  ];
-
-  const defaultAccounts = [
-    {
-      username: "Admin",
-      employeeName: "Sameer Jabbar",
-      role: "Admin",
-      status: "Active",
-      password: "1234",
-    },
-  ];
-
-  let handovers = [];
-  let filteredHandovers = [];
-  let deletedHandovers = [];
-  let users = [];
-  let accounts = [];
-
-  let reportsStatusChart = null;
-  let reportsUserChart = null;
-
-  let isEditMode = false;
-  let editingId = null;
-  let editingReadOnly = false;
-
-  let editingUserIndex = null;
-  let userModal, userEditForm, editUserNameInput, editUserRoleInput, editUserEmailInput;
-
-  let handoverModal;
-  let handoverForm;
-  let inputId, inputFrom, inputTo, inputItems, inputLongDesc, inputPriority,
-    inputStatus, inputDate, inputActionBy,
-    attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
-
-  let accountModal, accountForm;
-  let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect, accountPasswordInput;
-  let isEditAccount = false;
-  let editingAccountIndex = null;
-
-  let activeAccountUsername = null;
-
-  function loadUsers() {
-    const saved = localStorage.getItem("warehouseUsers");
-    if (saved) {
-      try { users = JSON.parse(saved); } catch { users = [...defaultUsers]; }
-    } else {
-      users = [...defaultUsers];
-    }
-  }
-
-  function saveUsers() {
-    localStorage.setItem("warehouseUsers", JSON.stringify(users));
-  }
-
-  function loadHandovers() {
-    const saved = localStorage.getItem("warehouseHandovers");
-    if (saved) {
-      try { handovers = JSON.parse(saved); } catch { handovers = [...defaultHandovers]; }
-    } else {
-      handovers = [...defaultHandovers];
-    }
-    filteredHandovers = [...handovers];
-  }
-
-  function saveHandovers() {
-    localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
-  }
-
-  function loadDeletedHandovers() {
-    const saved = localStorage.getItem("warehouseDeletedHandovers");
-    if (saved) {
-      try { deletedHandovers = JSON.parse(saved); } catch { deletedHandovers = []; }
-    } else {
-      deletedHandovers = [];
-    }
-  }
-
-  function saveDeletedHandovers() {
-    localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers));
-  }
-
-  function normalizeAccountsPasswords() {
-    accounts.forEach(acc => {
-      if (typeof acc.password === "undefined" || acc.password === null) {
-        acc.password = "1234";
-      }
-    });
-  }
-
-  function loadAccounts() {
-    const saved = localStorage.getItem("warehouseAccounts");
-    if (saved) {
-      try { accounts = JSON.parse(saved); } catch { accounts = [...defaultAccounts]; }
-    } else {
-      accounts = [...defaultAccounts];
-    }
-    normalizeAccountsPasswords();
-  }
-
-  function saveAccounts() {
-    normalizeAccountsPasswords();
-    localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
-  }
-
-  function loadActiveAccount() {
-    activeAccountUsername = localStorage.getItem("warehouseActiveAccountUsername") || "";
-  }
-
-  function saveActiveAccount() {
-    if (activeAccountUsername) {
-      localStorage.setItem("warehouseActiveAccountUsername", activeAccountUsername);
-    } else {
-      localStorage.removeItem("warehouseActiveAccountUsername");
-    }
-  }
-
-  function getLoggedInUsername() {
-    return localStorage.getItem("warehouseLoggedInAccountUsername") || "";
-  }
-
-  function setLoggedInUsername(username) {
-    if (username) {
-      localStorage.setItem("warehouseLoggedInAccountUsername", username);
-    } else {
-      localStorage.removeItem("warehouseLoggedInAccountUsername");
-    }
-  }
-
-  function getLoggedInAccount() {
-    const username = getLoggedInUsername();
-    if (!username) return null;
-    return accounts.find(acc => acc.username === username) || null;
-  }
-
-  // ===== Visibility rules =====
-  function getVisibleHandovers() {
-    const acc = getLoggedInAccount();
-    if (!acc) return [];
-
-    if (acc.role === "Admin" || acc.role === "Supervisor") {
-      return handovers;
-    }
-
-    const empName = acc.employeeName?.trim() || "";
-    if (!empName) return [];
-
-    return handovers.filter(h => (h.actionBy || "").trim() === empName);
-  }
-
-  function canEditHandover(h) {
-    const acc = getLoggedInAccount();
-    if (!acc) return false;
-    if (acc.role === "Admin" || acc.role === "Supervisor") return true;
-
-    const empName = acc.employeeName || "";
-    if (!empName) return false;
-
-    if (acc.role === "User") {
-      return h.actionBy === empName || h.to === empName;
-    }
-    return false;
-  }
-
-  function generateNextId() {
-    const today = new Date();
-    const year = String(today.getFullYear()).slice(-2);
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-
-    let lastSerial = loadIdCounter();
-    if (typeof lastSerial !== "number" || isNaN(lastSerial)) lastSerial = 0;
-    lastSerial += 1;
-    saveIdCounter(lastSerial);
-
-    const serial = String(lastSerial).padStart(4, "0");
-    return `HNDR-${year}-${month}-${serial}`;
-  }
-
-  function getStatusClass(status) {
-    switch (status) {
-      case "Pending": return "status-badge status-pending";
-      case "Completed": return "status-badge status-completed";
-      case "Delayed": return "status-badge status-delayed";
-      case "In Progress": return "status-badge status-inprogress";
-      default: return "status-badge";
-    }
-  }
-
-  // ===== Table Rendering =====
-  function renderTable() {
-    const tbody = document.getElementById("handover-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
-    const acc = getLoggedInAccount();
-    const empName = acc?.employeeName?.trim() || "";
-    const isAdmin = acc && acc.role === "Admin";
-
-    filteredHandovers.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-      const canEdit = canEditHandover(h);
-      const isAssignedToUser = empName && h.actionBy === empName;
-
-      let actionsHtml = `
-        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
-          <i class="bi bi-eye"></i>
-        </button>
-      `;
-      if (canEdit) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
-            <i class="bi bi-check2"></i>
-          </button>
-        `;
-      }
-      if (isAdmin) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
-            <i class="bi bi-trash"></i>
-          </button>
-        `;
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td>
-          ${h.actionBy || ""}
-          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>` : ""}
-        </td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}"
-                     class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     download="${h.attachmentName || "attachment"}">
-                   <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    const countEl = document.getElementById("table-count");
-    if (countEl) countEl.textContent = filteredHandovers.length + " records";
-
-    renderCompletedTable();
-    attachRowActions();
-    updateStats();
-    renderReports();
-  }
-
-  function renderCompletedTable() {
-    const tbody = document.getElementById("completed-tbody");
-    const countEl = document.getElementById("completed-count");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-    const base = getVisibleHandovers();
-    const completed = base.filter(h => h.status === "Completed");
-
-    const acc = getLoggedInAccount();
-    const empName = acc?.employeeName?.trim() || "";
-    const isAdmin = acc && acc.role === "Admin";
-
-    completed.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-      const isAssignedToUser = empName && h.actionBy === empName;
-
-      let actionsHtml = `
-        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
-          <i class="bi bi-eye"></i>
-        </button>
-      `;
-      if (isAdmin) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
-            <i class="bi bi-trash"></i>
-          </button>
-        `;
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td>
-          ${h.actionBy || ""}
-          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>` : ""}
-        </td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}"
-                     class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     download="${h.attachmentName || "attachment"}">
-                   <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    if (countEl) countEl.textContent = completed.length + " records";
-  }
-
-  function renderDeletedHandovers() {
-    const tbody = document.getElementById("deleted-handover-tbody");
-    const countEl = document.getElementById("deleted-count");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-
-    const acc = getLoggedInAccount();
-    const isAdmin = acc && acc.role === "Admin";
-
-    deletedHandovers.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-
-      let actionsHtml = "";
-      if (isAdmin) {
-        actionsHtml = `
-          <button class="btn btn-sm btn-outline-success btn-restore-handover" data-id="${h.id}" title="Restore">
-            <i class="bi bi-arrow-counterclockwise"></i>
-          </button>
-        `;
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td>${h.actionBy || ""}</td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}"
-                     class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     download="${h.attachmentName || "attachment"}">
-                   <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    if (countEl) countEl.textContent = deletedHandovers.length + " records";
-    attachDeletedRowActions();
-  }
-
-  function attachRowActions() {
-    document.querySelectorAll(".btn-view").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        openEditHandover(id);
-      });
-    });
-
-    document.querySelectorAll(".btn-complete").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        const h = handovers.find(x => x.id === id);
-        if (!h) return;
-        if (!canEditHandover(h)) {
-          alert("You are not allowed to update this handover.");
-          return;
-        }
-        h.status = "Completed";
-        saveHandovers();
-        applyFilters();
-      });
-    });
-
-    document.querySelectorAll(".btn-delete-handover").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") {
-          alert("Only Admin can delete handovers.");
-          return;
-        }
-        const id = btn.getAttribute("data-id");
-        const h = handovers.find(x => x.id === id);
-        if (!h) return;
-
-        const ok = confirm(`Are you sure you want to delete handover "${h.id}"?`);
-        if (!ok) return;
-
-        handovers = handovers.filter(x => x.id !== id);
-        deletedHandovers.push(h);
-
-        saveHandovers();
-        saveDeletedHandovers();
-
-        applyFilters();
-        renderDeletedHandovers();
-      });
-    });
-  }
-
-  function attachDeletedRowActions() {
-    document.querySelectorAll(".btn-restore-handover").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") {
-          alert("Only Admin can restore handovers.");
-          return;
-        }
-
-        const id = btn.getAttribute("data-id");
-        const idx = deletedHandovers.findIndex(h => h.id === id);
-        if (idx === -1) return;
-
-        const h = deletedHandovers[idx];
-        const ok = confirm(`Restore handover "${h.id}" back to main list?`);
-        if (!ok) return;
-
-        deletedHandovers.splice(idx, 1);
-        handovers.push(h);
-
-        saveHandovers();
-        saveDeletedHandovers();
-
-        filteredHandovers = getVisibleHandovers();
-        applyFilters();
-        renderDeletedHandovers();
-      });
-    });
-  }
-
-  function applyFilters() {
-    const fromEl = document.getElementById("filter-from");
-    const toEl = document.getElementById("filter-to");
-    const statusEl = document.getElementById("filter-status");
-    const priorityEl = document.getElementById("filter-priority");
-    const dateFromEl = document.getElementById("filter-date-from");
-    const dateToEl = document.getElementById("filter-date-to");
-    const searchEl = document.getElementById("filter-search");
-
-    const from = fromEl ? fromEl.value : "";
-    const to = toEl ? toEl.value : "";
-    const status = statusEl ? statusEl.value : "";
-    const priority = priorityEl ? priorityEl.value : "";
-    const dateFrom = dateFromEl ? dateFromEl.value : "";
-    const dateTo = dateToEl ? dateToEl.value : "";
-    const search = (searchEl ? searchEl.value : "").toLowerCase();
-
-    const base = getVisibleHandovers();
-
-    filteredHandovers = base.filter(h => {
-      let ok = true;
-      if (from && h.from !== from) ok = false;
-      if (to && h.to !== to) ok = false;
-      if (status && h.status !== status) ok = false;
-      if (priority && h.priority !== priority) ok = false;
-      if (dateFrom && h.date < dateFrom) ok = false;
-      if (dateTo && h.date > dateTo) ok = false;
-
-      if (search) {
-        const text = (h.id + " " + h.items + " " + h.from + " " + h.to).toLowerCase();
-        if (!text.includes(search)) ok = false;
-      }
-      return ok;
-    });
-
-    renderTable();
-  }
-
-  function resetFilters() {
-    const ids = ["filter-from","filter-to","filter-status","filter-priority","filter-date-from","filter-date-to","filter-search"];
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-    filteredHandovers = getVisibleHandovers();
-    renderTable();
-  }
-
-  function updateStats() {
-    const total = filteredHandovers.length;
-    const pending = filteredHandovers.filter(h => h.status === "Pending").length;
-    const completed = filteredHandovers.filter(h => h.status === "Completed").length;
-    const delayed = filteredHandovers.filter(h => h.status === "Delayed").length;
-
-    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setText("stat-total", total);
-    setText("stat-pending", pending);
-    setText("stat-completed", completed);
-    setText("stat-delayed", delayed);
-  }
-
-  // ===== Reports =====
-  function renderReports() {
-    const repTotal = document.getElementById("rep-total");
-    const statusCanvas = document.getElementById("reports-status-chart");
-    const userCanvas = document.getElementById("reports-user-chart");
-    if (!repTotal || !statusCanvas || !userCanvas) return;
-
-    const base = getVisibleHandovers();
-    const total = base.length;
-    const pending = base.filter(h => h.status === "Pending").length;
-    const completed = base.filter(h => h.status === "Completed").length;
-    const delayed = base.filter(h => h.status === "Delayed").length;
-    const inProgress = base.filter(h => h.status === "In Progress").length;
-
-    document.getElementById("rep-total").textContent = total;
-    document.getElementById("rep-pending").textContent = pending;
-    document.getElementById("rep-completed").textContent = completed;
-    document.getElementById("rep-delayed").textContent = delayed;
-
-    if (reportsStatusChart) reportsStatusChart.destroy();
-    reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: ["Pending", "In Progress", "Completed", "Delayed"],
-        datasets: [{ label: "Handovers", data: [pending, inProgress, completed, delayed] }],
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { font: { size: 11 } } },
-          y: { beginAtZero: true, ticks: { stepSize: 1 } },
-        },
-      },
-    });
-
-    const byUser = {};
-    base.forEach(h => {
-      const key = h.actionBy || "Unknown";
-      byUser[key] = (byUser[key] || 0) + 1;
-    });
-
-    const userLabels = Object.keys(byUser);
-    const userData = Object.values(byUser);
-
-    if (reportsUserChart) reportsUserChart.destroy();
-    reportsUserChart = new Chart(userCanvas.getContext("2d"), {
-      type: "bar",
-      data: { labels: userLabels, datasets: [{ label: "Handovers", data: userData }] },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { font: { size: 11 } } },
-          y: { beginAtZero: true, ticks: { stepSize: 1 } },
-        },
-      },
-    });
-  }
-
-  // ===== Excel Export =====
-  function exportHandoverExcel() {
-    const source = (filteredHandovers && filteredHandovers.length > 0) ? filteredHandovers : getVisibleHandovers();
-
-    const data = source.map(h => ({
-      "HNDR ID": h.id,
-      "From": h.from,
-      "To": h.to,
-      "Items": h.items,
-      "Long Description": h.longDescription || "",
-      "Priority": h.priority || "",
-      "Status": h.status || "",
-      "Date": h.date || "",
-      "Action By": h.actionBy || "",
-      "Attachment Name": h.attachmentName || "None",
-      "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
-    }));
-
-    if (data.length === 0) { alert("No records to export."); return; }
-    if (typeof XLSX === "undefined") { alert("XLSX library is not loaded."); return; }
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Handover List");
-    XLSX.writeFile(wb, "Handover_List.xlsx");
-  }
-
-  function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function setSelectOptions(select, values, includeEmpty, emptyLabel) {
-    const current = select.value;
-    select.innerHTML = "";
-    if (includeEmpty) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = emptyLabel || "All";
-      select.appendChild(opt);
-    }
-    values.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      select.appendChild(opt);
-    });
-    if (current && values.includes(current)) select.value = current;
-  }
-
-  function refreshUserSelectOptions() {
-    const names = users.map(u => u.name);
-
-    const filterFrom = document.getElementById("filter-from");
-    const filterTo = document.getElementById("filter-to");
-    if (filterFrom) setSelectOptions(filterFrom, names, true, "All");
-    if (filterTo) setSelectOptions(filterTo, names, true, "All");
-
-    if (inputTo && inputActionBy) {
-      setSelectOptions(inputTo, names, false);
-      setSelectOptions(inputActionBy, names, false);
-    }
-
-    fillAccountEmployeeOptions();
-  }
-
-  function setupFromForNewHandover() {
-    if (!inputFrom) return;
-
-    const acc = getLoggedInAccount();
-    const linkedName = acc?.employeeName?.trim();
-
-    inputFrom.innerHTML = "";
-
-    if (linkedName) {
-      const opt = document.createElement("option");
-      opt.value = linkedName;
-      opt.textContent = linkedName;
-      inputFrom.appendChild(opt);
-      inputFrom.value = linkedName;
-    } else {
-      const names = users.map(u => u.name);
-      setSelectOptions(inputFrom, names, false);
-      if (names.length > 0) inputFrom.value = names[0];
-    }
-
-    inputFrom.setAttribute("disabled", "disabled");
-  }
-
-  function refreshActiveAccountSelect() {
-    const select = document.getElementById("active-account-select");
-    if (!select) return;
-
-    const currentValue = activeAccountUsername || "";
-
-    select.innerHTML = "";
-    const optGuest = document.createElement("option");
-    optGuest.value = "";
-    optGuest.textContent = "Guest (no login)";
-    select.appendChild(optGuest);
-
-    accounts.forEach(acc => {
-      const opt = document.createElement("option");
-      opt.value = acc.username;
-      opt.textContent = `${acc.username} (${acc.role || "User"})`;
-      select.appendChild(opt);
-    });
-
-    select.value = currentValue;
-    select.onchange = () => {
-      activeAccountUsername = select.value || "";
-      saveActiveAccount();
-    };
-  }
-
-  function setHandoverFormReadOnly(readOnly) {
-    const fields = [inputTo, inputItems, inputLongDesc, inputPriority, inputStatus, inputDate, inputActionBy, attachmentInput];
-    fields.forEach(el => {
-      if (!el) return;
-      if (readOnly) el.setAttribute("disabled", "disabled");
-      else el.removeAttribute("disabled");
-    });
-
-    if (inputFrom) inputFrom.setAttribute("disabled", "disabled");
-    if (handoverSaveBtn) handoverSaveBtn.style.display = readOnly ? "none" : "inline-block";
-  }
-
-  function initHandoverModal() {
-    const modalEl = document.getElementById("handover-modal");
-    if (!modalEl) return;
-
-    handoverModal = new bootstrap.Modal(modalEl);
-    handoverForm = document.getElementById("handover-form");
-    modalTitleEl = document.getElementById("handover-modal-title");
-
-    inputId = document.getElementById("handover-id");
-    inputFrom = document.getElementById("handover-from");
-    inputTo = document.getElementById("handover-to");
-    inputItems = document.getElementById("handover-items");
-    inputLongDesc = document.getElementById("handover-long-desc");
-    inputPriority = document.getElementById("handover-priority");
-    inputStatus = document.getElementById("handover-status");
-    inputDate = document.getElementById("handover-date");
-    inputActionBy = document.getElementById("handover-action-by");
-    attachmentInput = document.getElementById("handover-attachment");
-    currentAttachmentInfo = document.getElementById("current-attachment-info");
-    handoverSaveBtn = document.getElementById("handover-save-btn");
-
-    refreshUserSelectOptions();
-
-    const openButtons = [
-      document.getElementById("btn-add-handover"),
-      document.getElementById("btn-add-handover-2"),
-    ].filter(Boolean);
-
-    openButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc) { alert("You must be logged in to create a handover."); return; }
-        if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-        if (acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
-
-        isEditMode = false;
-        editingId = null;
-        editingReadOnly = false;
-        handoverForm.reset();
-        inputId.value = generateNextId();
-        inputDate.value = new Date().toISOString().slice(0, 10);
-        if (currentAttachmentInfo) currentAttachmentInfo.textContent = "No attachment";
-        if (attachmentInput) attachmentInput.value = "";
-        if (inputLongDesc) inputLongDesc.value = "";
-        if (inputPriority) inputPriority.value = "P3";
-
-        refreshUserSelectOptions();
-        setupFromForNewHandover();
-
-        if (users.length > 0 && inputTo) inputTo.value = users[0].name;
-
-        const loggedAcc = getLoggedInAccount();
-        if (loggedAcc && loggedAcc.employeeName && inputActionBy) {
-          inputActionBy.value = loggedAcc.employeeName;
-        } else if (users.length > 0 && inputActionBy) {
-          inputActionBy.value = users[0].name;
-        }
-
-        setHandoverFormReadOnly(false);
-        if (modalTitleEl) modalTitleEl.textContent = "New Handover";
-        handoverModal.show();
-      });
-    });
-
-    if (!handoverForm) return;
-    handoverForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      if (editingReadOnly) return;
-
-      const acc = getLoggedInAccount();
-      if (!acc) { alert("You must be logged in to save."); return; }
-      if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-      if (!isEditMode && acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
-
-      const from = inputFrom ? inputFrom.value : "";
-      const to = inputTo ? inputTo.value : "";
-      const items = inputItems ? inputItems.value : "";
-      const longDescription = inputLongDesc ? inputLongDesc.value : "";
-      const priority = inputPriority ? inputPriority.value : "P3";
-      const status = inputStatus ? inputStatus.value : "Pending";
-      const date = inputDate ? inputDate.value : new Date().toISOString().slice(0, 10);
-      const actionBy = inputActionBy ? inputActionBy.value : "";
-      const file = attachmentInput && attachmentInput.files ? (attachmentInput.files[0] || null) : null;
-
-      let attachmentName = null;
-      let attachmentType = null;
-      let attachmentSize = null;
-      let attachmentDataUrl = null;
-
-      if (isEditMode) {
-        const current = handovers.find(h => h.id === editingId);
-        if (current) {
-          if (!canEditHandover(current)) { alert("You are not allowed to edit this handover."); return; }
-          attachmentName = current.attachmentName || null;
-          attachmentType = current.attachmentType || null;
-          attachmentSize = current.attachmentSize || null;
-          attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
-        }
-      }
-
-      if (file) {
-        if (file.size > MAX_ATTACHMENT_SIZE) {
-          alert("Attachment is too large (max ~3MB).");
-          return;
-        }
-        attachmentName = file.name;
-        attachmentType = file.type || null;
-        attachmentSize = file.size;
-        attachmentDataUrl = await readFileAsDataUrl(file);
-      }
-
-      if (isEditMode) {
-        const idx = handovers.findIndex(h => h.id === editingId);
-        if (idx === -1) return;
-        handovers[idx] = {
-          ...handovers[idx],
-          from, to, items, longDescription, priority, status, date, actionBy,
-          attachmentName, attachmentType, attachmentSize, attachmentDataUrl,
-        };
-      } else {
-        const id = inputId ? inputId.value : generateNextId();
-        handovers.push({
-          id, from, to, items, longDescription, priority, status, date, actionBy,
-          attachmentName, attachmentType, attachmentSize, attachmentDataUrl,
-        });
-      }
-
-      saveHandovers();
-      applyFilters();
-      handoverModal.hide();
-      if (attachmentInput) attachmentInput.value = "";
-    });
-  }
-
-  function openEditHandover(id) {
-    const h = handovers.find(x => x.id === id);
+  list.forEach(h => {
     if (!h) return;
 
-    isEditMode = true;
-    editingId = id;
-
-    if (handoverForm) handoverForm.reset();
-    refreshUserSelectOptions();
-
-    const fromName = h.from || "";
-    if (inputFrom) {
-      inputFrom.innerHTML = "";
-      if (fromName) {
-        const opt = document.createElement("option");
-        opt.value = fromName;
-        opt.textContent = fromName;
-        inputFrom.appendChild(opt);
-        inputFrom.value = fromName;
-      }
-      inputFrom.setAttribute("disabled", "disabled");
+    let yy, mm;
+    const dateStr = h.date || "";
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+    if (m) {
+      yy = m[1].slice(-2);
+      mm = m[2];
+    } else {
+      const today = new Date();
+      yy = String(today.getFullYear()).slice(-2);
+      mm = String(today.getMonth() + 1).padStart(2, "0");
     }
 
-    if (inputId) inputId.value = h.id;
-    if (inputTo) inputTo.value = h.to;
-    if (inputItems) inputItems.value = h.items;
-    if (inputLongDesc) inputLongDesc.value = h.longDescription || "";
-    if (inputPriority) inputPriority.value = h.priority || "P3";
-    if (inputStatus) inputStatus.value = h.status;
-    if (inputDate) inputDate.value = h.date;
-    if (inputActionBy) inputActionBy.value = h.actionBy || (users[0] ? users[0].name : "");
-    if (attachmentInput) attachmentInput.value = "";
+    counter += 1;
+    const serial = String(counter).padStart(4, "0");
+    h.id = `HNDR-${yy}-${mm}-${serial}`;
+  });
 
-    if (currentAttachmentInfo) {
-      if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
-        currentAttachmentInfo.textContent =
-          "Current attachment: " + h.attachmentName +
-          (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
-      } else {
-        currentAttachmentInfo.textContent = "No attachment";
-      }
-    }
+  return counter;
+}
 
-    const editable = canEditHandover(h);
-    editingReadOnly = !editable;
-    setHandoverFormReadOnly(!editable);
-
-    if (modalTitleEl) modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
-    if (handoverModal) handoverModal.show();
+function resequenceAllHandoverIdsFromOne() {
+  const all = [...handovers, ...deletedHandovers];
+  if (all.length === 0) {
+    saveIdCounter(0);
+    return;
   }
 
-  // ===== Sidebar Navigation =====
-  function setActiveView(view, save = true) {
-    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-    const views = document.querySelectorAll(".view-section");
+  all.sort((a, b) => {
+    const da = a.date || "";
+    const db = b.date || "";
+    if (da && db && da !== db) return da.localeCompare(db);
+    return (a.id || "").localeCompare(b.id || "");
+  });
 
-    if (view === "admin-users" || view === "deleted-handovers") {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") {
-        alert("Only Admin can access this page.");
-        return;
-      }
-    }
+  let lastSerial = 0;
+  lastSerial = normalizeIdsForList(all, lastSerial);
+  saveIdCounter(lastSerial);
+}
 
-    navLinks.forEach(link => {
-      const v = link.getAttribute("data-view");
-      link.classList.toggle("active", v === view);
-    });
+function generateNextId() {
+  const today = new Date();
+  const year = String(today.getFullYear()).slice(-2);
+  const month = String(today.getMonth() + 1).padStart(2, "0");
 
-    views.forEach(section => {
-      const v = section.getAttribute("data-view");
-      section.classList.toggle("d-none", v !== view);
-    });
+  let lastSerial = loadIdCounter();
+  if (typeof lastSerial !== "number" || isNaN(lastSerial)) lastSerial = 0;
+  lastSerial += 1;
+  saveIdCounter(lastSerial);
 
-    if (save) localStorage.setItem("warehouseActiveView", view);
+  const serial = String(lastSerial).padStart(4, "0");
+  return `HNDR-${year}-${month}-${serial}`;
+}
+
+/* =========================
+   Storage Load/Save
+   ========================= */
+function loadUsers() {
+  const saved = localStorage.getItem("warehouseUsers");
+  if (saved) {
+    try { users = JSON.parse(saved); } catch { users = [...defaultUsers]; }
+  } else {
+    users = [...defaultUsers];
+  }
+}
+
+function saveUsers() {
+  localStorage.setItem("warehouseUsers", JSON.stringify(users));
+}
+
+function loadHandovers() {
+  const saved = localStorage.getItem("warehouseHandovers");
+  if (saved) {
+    try { handovers = JSON.parse(saved); } catch { handovers = [...defaultHandovers]; }
+  } else {
+    handovers = [...defaultHandovers];
+  }
+  filteredHandovers = [...handovers];
+}
+
+function saveHandovers() {
+  localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
+}
+
+function loadDeletedHandovers() {
+  const saved = localStorage.getItem("warehouseDeletedHandovers");
+  if (saved) {
+    try { deletedHandovers = JSON.parse(saved); } catch { deletedHandovers = []; }
+  } else {
+    deletedHandovers = [];
+  }
+}
+
+function saveDeletedHandovers() {
+  localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers));
+}
+
+function normalizeAccountsPasswords() {
+  accounts.forEach(acc => {
+    if (typeof acc.password === "undefined" || acc.password === null) acc.password = "1234";
+  });
+}
+
+function loadAccounts() {
+  const saved = localStorage.getItem("warehouseAccounts");
+  if (saved) {
+    try { accounts = JSON.parse(saved); } catch { accounts = [...defaultAccounts]; }
+  } else {
+    accounts = [...defaultAccounts];
+  }
+  normalizeAccountsPasswords();
+}
+
+function saveAccounts() {
+  normalizeAccountsPasswords();
+  localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
+}
+
+function loadActiveAccount() {
+  activeAccountUsername = localStorage.getItem("warehouseActiveAccountUsername") || "";
+}
+
+function saveActiveAccount() {
+  if (activeAccountUsername) localStorage.setItem("warehouseActiveAccountUsername", activeAccountUsername);
+  else localStorage.removeItem("warehouseActiveAccountUsername");
+}
+
+function getLoggedInUsername() {
+  return localStorage.getItem("warehouseLoggedInAccountUsername") || "";
+}
+
+function setLoggedInUsername(username) {
+  if (username) localStorage.setItem("warehouseLoggedInAccountUsername", username);
+  else localStorage.removeItem("warehouseLoggedInAccountUsername");
+}
+
+function getLoggedInAccount() {
+  const username = getLoggedInUsername();
+  if (!username) return null;
+  return accounts.find(acc => acc.username === username) || null;
+}
+
+/* =========================
+   Permissions / Visibility
+   ========================= */
+function getVisibleHandovers() {
+  const acc = getLoggedInAccount();
+  if (!acc) return [];
+
+  if (acc.role === "Admin" || acc.role === "Supervisor") return handovers;
+
+  const empName = (acc.employeeName || "").trim();
+  if (!empName) return [];
+
+  return handovers.filter(h => (h.actionBy || "").trim() === empName);
+}
+
+function canEditHandover(h) {
+  const acc = getLoggedInAccount();
+  if (!acc) return false;
+  if (acc.role === "Admin" || acc.role === "Supervisor") return true;
+
+  const empName = acc.employeeName || "";
+  if (!empName) return false;
+
+  if (acc.role === "User") return h.actionBy === empName || h.to === empName;
+  return false;
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case "Pending": return "status-badge status-pending";
+    case "Completed": return "status-badge status-completed";
+    case "Delayed": return "status-badge status-delayed";
+    case "In Progress": return "status-badge status-inprogress";
+    default: return "status-badge";
+  }
+}
+
+/* =========================
+   Attachment handling (Fix "link not working")
+   ========================= */
+function dataUrlToBlob(dataUrl) {
+  const [meta, base64] = dataUrl.split(",");
+  const mime = (meta.match(/data:(.*?);base64/) || [])[1] || "application/octet-stream";
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function openAttachmentForHandover(h) {
+  if (!h) return;
+
+  const name = h.attachmentName || "attachment";
+  const url = h.attachmentDataUrl || h.attachmentUrl;
+
+  if (!url) {
+    alert("No attachment found.");
+    return;
   }
 
-  function initSidebarNavigation() {
-    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-    navLinks.forEach(link => {
-      link.addEventListener("click", e => {
-        e.preventDefault();
-        const view = link.getAttribute("data-view");
-        if (!view) return;
-        setActiveView(view, true);
-      });
-    });
+  // normal URL
+  if (typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://"))) {
+    window.open(url, "_blank");
+    return;
   }
 
-  // ===== Employees =====
-  function renderUsers() {
-    const tbody = document.getElementById("users-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
+  // data URL
+  if (typeof url === "string" && url.startsWith("data:")) {
+    try {
+      const blob = dataUrlToBlob(url);
+      const blobUrl = URL.createObjectURL(blob);
 
-    users.forEach((u, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${u.name}</td>
-        <td>${u.role || ""}</td>
-        <td>${u.email || ""}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary btn-edit-user" data-index="${index}">
-            <i class="bi bi-pencil"></i>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
 
-    attachUserRowActions();
-  }
-
-  function attachUserRowActions() {
-    document.querySelectorAll(".btn-edit-user").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-index"), 10);
-        openEditUser(idx);
-      });
-    });
-  }
-
-  function initUserForm() {
-    const form = document.getElementById("user-form");
-    const nameInput = document.getElementById("user-name");
-    const roleInput = document.getElementById("user-role");
-    const emailInput = document.getElementById("user-email");
-    if (!form || !nameInput) return;
-
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const role = roleInput ? roleInput.value.trim() : "";
-      const email = emailInput ? emailInput.value.trim() : "";
-      if (!name) return;
-
-      users.push({ name, role, email });
-      saveUsers();
-      renderUsers();
-      refreshUserSelectOptions();
-
-      nameInput.value = "";
-      if (roleInput) roleInput.value = "";
-      if (emailInput) emailInput.value = "";
-    });
-  }
-
-  function initUserModal() {
-    const modalEl = document.getElementById("user-modal");
-    if (!modalEl) return;
-
-    userModal = new bootstrap.Modal(modalEl);
-    userEditForm = document.getElementById("user-edit-form");
-    editUserNameInput = document.getElementById("edit-user-name");
-    editUserRoleInput = document.getElementById("edit-user-role");
-    editUserEmailInput = document.getElementById("edit-user-email");
-
-    if (!userEditForm) return;
-    userEditForm.addEventListener("submit", e => {
-      e.preventDefault();
-      if (editingUserIndex === null) return;
-
-      const name = editUserNameInput ? editUserNameInput.value.trim() : "";
-      const role = editUserRoleInput ? editUserRoleInput.value.trim() : "";
-      const email = editUserEmailInput ? editUserEmailInput.value.trim() : "";
-      if (!name) return;
-
-      users[editingUserIndex] = { name, role, email };
-      saveUsers();
-      renderUsers();
-      refreshUserSelectOptions();
-      userModal.hide();
-    });
-  }
-
-  function openEditUser(index) {
-    const u = users[index];
-    if (!u || !userModal) return;
-    editingUserIndex = index;
-    if (editUserNameInput) editUserNameInput.value = u.name;
-    if (editUserRoleInput) editUserRoleInput.value = u.role || "";
-    if (editUserEmailInput) editUserEmailInput.value = u.email || "";
-    userModal.show();
-  }
-
-  // ===== Admin Accounts =====
-  function renderAccounts() {
-    const tbody = document.getElementById("accounts-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
-    accounts.forEach((acc, index) => {
-      const badgeClass = acc.status === "Disabled"
-        ? "bg-secondary-subtle text-secondary"
-        : "bg-success-subtle text-success";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${acc.username}</td>
-        <td>${acc.employeeName || "-"}</td>
-        <td>${acc.role || ""}</td>
-        <td><span class="badge rounded-pill ${badgeClass}">${acc.status || "Active"}</span></td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${index}">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger btn-delete-account" data-index="${index}">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    attachAccountRowActions();
-    refreshActiveAccountSelect();
-  }
-
-  function attachAccountRowActions() {
-    document.querySelectorAll(".btn-edit-account").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-index"), 10);
-        openEditAccount(idx);
-      });
-    });
-
-    document.querySelectorAll(".btn-delete-account").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-index"), 10);
-        const acc = accounts[idx];
-        if (!acc) return;
-
-        const ok = confirm(`Are you sure you want to delete account "${acc.username}"?`);
-        if (!ok) return;
-
-        accounts.splice(idx, 1);
-        saveAccounts();
-        renderAccounts();
-        refreshActiveAccountSelect();
-
-        if (acc.username === getLoggedInUsername()) {
-          setLoggedInUsername("");
-          activeAccountUsername = "";
-          saveActiveAccount();
-          showLoginPage();
-          updateCurrentUserLabel();
-        }
-      });
-    });
-  }
-
-  function fillAccountEmployeeOptions() {
-    if (!accountEmployeeSelect) return;
-    accountEmployeeSelect.innerHTML = "";
-
-    const optNone = document.createElement("option");
-    optNone.value = "";
-    optNone.textContent = "(No linked employee)";
-    accountEmployeeSelect.appendChild(optNone);
-
-    users.forEach(u => {
-      const opt = document.createElement("option");
-      opt.value = u.name;
-      opt.textContent = u.name;
-      accountEmployeeSelect.appendChild(opt);
-    });
-  }
-
-  function initAccountModal() {
-    const modalEl = document.getElementById("account-modal");
-    if (!modalEl) return;
-
-    accountModal = new bootstrap.Modal(modalEl);
-    accountForm = document.getElementById("account-form");
-    accountUsernameInput = document.getElementById("account-username");
-    accountEmployeeSelect = document.getElementById("account-employee");
-    accountRoleSelect = document.getElementById("account-role");
-    accountStatusSelect = document.getElementById("account-status");
-    accountPasswordInput = document.getElementById("account-password");
-
-    fillAccountEmployeeOptions();
-
-    const btnAdd = document.getElementById("btn-add-account");
-    if (btnAdd) {
-      btnAdd.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") { alert("Only Admin can add accounts."); return; }
-        isEditAccount = false;
-        editingAccountIndex = null;
-        if (accountForm) accountForm.reset();
-        fillAccountEmployeeOptions();
-        if (accountStatusSelect) accountStatusSelect.value = "Active";
-        if (accountPasswordInput) accountPasswordInput.value = "";
-        accountModal.show();
-      });
-    }
-
-    if (!accountForm) return;
-    accountForm.addEventListener("submit", e => {
-      e.preventDefault();
-
-      const accLogged = getLoggedInAccount();
-      if (!accLogged || accLogged.role !== "Admin") {
-        alert("Only Admin can edit accounts.");
-        return;
-      }
-
-      const username = accountUsernameInput ? accountUsernameInput.value.trim() : "";
-      const employeeName = accountEmployeeSelect ? (accountEmployeeSelect.value || "") : "";
-      const role = accountRoleSelect ? (accountRoleSelect.value || "User") : "User";
-      const status = accountStatusSelect ? (accountStatusSelect.value || "Active") : "Active";
-      const rawPassword = accountPasswordInput ? ((accountPasswordInput.value || "").trim()) : "";
-
-      if (!username) return;
-
-      if (isEditAccount && editingAccountIndex !== null) {
-        const existing = accounts[editingAccountIndex];
-        accounts[editingAccountIndex] = {
-          ...existing,
-          username,
-          employeeName,
-          role,
-          status,
-          password: rawPassword ? rawPassword : existing.password,
-        };
-      } else {
-        const password = rawPassword || "1234";
-        accounts.push({ username, employeeName, role, status, password });
-      }
-
-      saveAccounts();
-      renderAccounts();
-      refreshActiveAccountSelect();
-      if (accountPasswordInput) accountPasswordInput.value = "";
-      accountModal.hide();
-    });
-  }
-
-  function openEditAccount(index) {
-    const acc = accounts[index];
-    if (!acc) return;
-
-    const accLogged = getLoggedInAccount();
-    if (!accLogged || accLogged.role !== "Admin") {
-      alert("Only Admin can edit accounts.");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+      return;
+    } catch (e) {
+      console.error(e);
+      alert("Failed to open attachment.");
       return;
     }
-
-    isEditAccount = true;
-    editingAccountIndex = index;
-
-    fillAccountEmployeeOptions();
-    if (accountUsernameInput) accountUsernameInput.value = acc.username;
-    if (accountEmployeeSelect) accountEmployeeSelect.value = acc.employeeName || "";
-    if (accountRoleSelect) accountRoleSelect.value = acc.role || "User";
-    if (accountStatusSelect) accountStatusSelect.value = acc.status || "Active";
-    if (accountPasswordInput) accountPasswordInput.value = "";
-
-    accountModal.show();
   }
 
-  // ===== Manual resequence button (Admin only) =====
-  function initResequenceButton() {
-    const btn = document.getElementById("btn-resequence-ids");
+  alert("Attachment format not supported.");
+}
+
+function initAttachmentButtons() {
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-open-attachment");
     if (!btn) return;
 
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") {
-        alert("Only Admin can resequence HNDR IDs.");
-        return;
-      }
+    const id = btn.getAttribute("data-id");
+    const h = handovers.find(x => x.id === id) || deletedHandovers.find(x => x.id === id);
+    openAttachmentForHandover(h);
+  });
+}
 
-      const ok = confirm(
-        "This will resequence ALL HNDR IDs starting from 0001 based on date (including deleted handovers).\nDo you want to continue?"
-      );
+/* =========================
+   Rendering: Tables
+   ========================= */
+function renderTable() {
+  const tbody = $("handover-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const acc = getLoggedInAccount();
+  const empName = acc?.employeeName?.trim() || "";
+  const isAdmin = acc && acc.role === "Admin";
+
+  filteredHandovers.forEach(h => {
+    const canEdit = canEditHandover(h);
+    const isAssignedToUser = empName && h.actionBy === empName;
+
+    let actionsHtml = `
+      <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
+        <i class="bi bi-eye"></i>
+      </button>
+    `;
+    if (canEdit) {
+      actionsHtml += `
+        <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
+          <i class="bi bi-check2"></i>
+        </button>
+      `;
+    }
+    if (isAdmin) {
+      actionsHtml += `
+        <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+    }
+
+    const hasAttachment = !!(h.attachmentDataUrl || h.attachmentUrl);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="fw-semibold">${h.id}</span></td>
+      <td>${h.from}</td>
+      <td>${h.to}</td>
+      <td>${h.items}</td>
+      <td>${h.priority || "-"}</td>
+      <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+      <td>${h.date}</td>
+      <td>
+        ${h.actionBy || ""}
+        ${
+          isAssignedToUser
+            ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Task assigned to you">Assigned to you</span>`
+            : ""
+        }
+      </td>
+      <td>
+        ${
+          hasAttachment
+            ? `<button class="btn btn-sm btn-outline-primary btn-open-attachment"
+                        data-id="${h.id}"
+                        title="${h.attachmentName || "Attachment"}">
+                  <i class="bi bi-paperclip"></i>
+               </button>`
+            : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+        }
+      </td>
+      <td>${actionsHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  text("table-count", filteredHandovers.length + " records");
+
+  renderCompletedTable();
+  attachRowActions();
+  updateStats();
+  renderReports();
+}
+
+function renderCompletedTable() {
+  const tbody = $("completed-tbody");
+  const countEl = $("completed-count");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  const base = getVisibleHandovers();
+  const completed = base.filter(h => h.status === "Completed");
+
+  const acc = getLoggedInAccount();
+  const isAdmin = acc && acc.role === "Admin";
+
+  completed.forEach(h => {
+    const hasAttachment = !!(h.attachmentDataUrl || h.attachmentUrl);
+
+    let actionsHtml = `
+      <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
+        <i class="bi bi-eye"></i>
+      </button>
+    `;
+    if (isAdmin) {
+      actionsHtml += `
+        <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="fw-semibold">${h.id}</span></td>
+      <td>${h.from}</td>
+      <td>${h.to}</td>
+      <td>${h.items}</td>
+      <td>${h.priority || "-"}</td>
+      <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+      <td>${h.date}</td>
+      <td>${h.actionBy || ""}</td>
+      <td>
+        ${
+          hasAttachment
+            ? `<button class="btn btn-sm btn-outline-primary btn-open-attachment"
+                        data-id="${h.id}"
+                        title="${h.attachmentName || "Attachment"}">
+                  <i class="bi bi-paperclip"></i>
+               </button>`
+            : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+        }
+      </td>
+      <td>${actionsHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (countEl) countEl.textContent = completed.length + " records";
+}
+
+function renderDeletedHandovers() {
+  const tbody = $("deleted-handover-tbody");
+  const countEl = $("deleted-count");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  const acc = getLoggedInAccount();
+  const isAdmin = acc && acc.role === "Admin";
+
+  deletedHandovers.forEach(h => {
+    const hasAttachment = !!(h.attachmentDataUrl || h.attachmentUrl);
+
+    const actionsHtml = isAdmin
+      ? `<button class="btn btn-sm btn-outline-success btn-restore-handover" data-id="${h.id}" title="Restore">
+            <i class="bi bi-arrow-counterclockwise"></i>
+         </button>`
+      : "";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="fw-semibold">${h.id}</span></td>
+      <td>${h.from}</td>
+      <td>${h.to}</td>
+      <td>${h.items}</td>
+      <td>${h.priority || "-"}</td>
+      <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
+      <td>${h.date}</td>
+      <td>${h.actionBy || ""}</td>
+      <td>
+        ${
+          hasAttachment
+            ? `<button class="btn btn-sm btn-outline-primary btn-open-attachment"
+                        data-id="${h.id}"
+                        title="${h.attachmentName || "Attachment"}">
+                  <i class="bi bi-paperclip"></i>
+               </button>`
+            : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+        }
+      </td>
+      <td>${actionsHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (countEl) countEl.textContent = deletedHandovers.length + " records";
+  attachDeletedRowActions();
+}
+
+/* =========================
+   Row Actions
+   ========================= */
+function attachRowActions() {
+  document.querySelectorAll(".btn-view").forEach(btn => {
+    btn.onclick = () => openEditHandover(btn.getAttribute("data-id"));
+  });
+
+  document.querySelectorAll(".btn-complete").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.getAttribute("data-id");
+      const h = handovers.find(x => x.id === id);
+      if (!h) return;
+      if (!canEditHandover(h)) { alert("You are not allowed to update this handover."); return; }
+      h.status = "Completed";
+      saveHandovers();
+      applyFilters();
+    };
+  });
+
+  document.querySelectorAll(".btn-delete-handover").forEach(btn => {
+    btn.onclick = () => {
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") { alert("Only Admin can delete handovers."); return; }
+
+      const id = btn.getAttribute("data-id");
+      const h = handovers.find(x => x.id === id);
+      if (!h) return;
+
+      const ok = confirm(`Are you sure you want to delete handover "${h.id}"?`);
       if (!ok) return;
 
-      resequenceAllHandoverIdsFromOne();
+      handovers = handovers.filter(x => x.id !== id);
+      deletedHandovers.push(h);
+
+      saveHandovers();
+      saveDeletedHandovers();
+
+      applyFilters();
+      renderDeletedHandovers();
+    };
+  });
+}
+
+function attachDeletedRowActions() {
+  document.querySelectorAll(".btn-restore-handover").forEach(btn => {
+    btn.onclick = () => {
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") { alert("Only Admin can restore handovers."); return; }
+
+      const id = btn.getAttribute("data-id");
+      const idx = deletedHandovers.findIndex(h => h.id === id);
+      if (idx === -1) return;
+
+      const h = deletedHandovers[idx];
+      const ok = confirm(`Restore handover "${h.id}" back to main list?`);
+      if (!ok) return;
+
+      deletedHandovers.splice(idx, 1);
+      handovers.push(h);
+
       saveHandovers();
       saveDeletedHandovers();
 
       filteredHandovers = getVisibleHandovers();
-      renderTable();
+      applyFilters();
       renderDeletedHandovers();
+    };
+  });
+}
 
-      alert("HNDR IDs resequenced successfully.");
-    });
+/* =========================
+   Filters / Stats
+   ========================= */
+function applyFilters() {
+  const from = $("filter-from") ? $("filter-from").value : "";
+  const to = $("filter-to") ? $("filter-to").value : "";
+  const status = $("filter-status") ? $("filter-status").value : "";
+  const priority = $("filter-priority") ? $("filter-priority").value : "";
+  const dateFrom = $("filter-date-from") ? $("filter-date-from").value : "";
+  const dateTo = $("filter-date-to") ? $("filter-date-to").value : "";
+  const search = $("filter-search") ? $("filter-search").value.toLowerCase() : "";
+
+  const base = getVisibleHandovers();
+
+  filteredHandovers = base.filter(h => {
+    let ok = true;
+    if (from && h.from !== from) ok = false;
+    if (to && h.to !== to) ok = false;
+    if (status && h.status !== status) ok = false;
+    if (priority && h.priority !== priority) ok = false;
+    if (dateFrom && h.date < dateFrom) ok = false;
+    if (dateTo && h.date > dateTo) ok = false;
+
+    if (search) {
+      const txt = (h.id + " " + h.items + " " + h.from + " " + h.to).toLowerCase();
+      if (!txt.includes(search)) ok = false;
+    }
+    return ok;
+  });
+
+  renderTable();
+}
+
+function resetFilters() {
+  const ids = ["filter-from","filter-to","filter-status","filter-priority","filter-date-from","filter-date-to","filter-search"];
+  ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+  filteredHandovers = getVisibleHandovers();
+  renderTable();
+}
+
+function updateStats() {
+  const total = filteredHandovers.length;
+  const pending = filteredHandovers.filter(h => h.status === "Pending").length;
+  const completed = filteredHandovers.filter(h => h.status === "Completed").length;
+  const delayed = filteredHandovers.filter(h => h.status === "Delayed").length;
+
+  text("stat-total", total);
+  text("stat-pending", pending);
+  text("stat-completed", completed);
+  text("stat-delayed", delayed);
+}
+
+/* =========================
+   Reports (Chart.js)
+   ========================= */
+function renderReports() {
+  const repTotal = $("rep-total");
+  const statusCanvas = $("reports-status-chart");
+  const userCanvas = $("reports-user-chart");
+  if (!repTotal || !statusCanvas || !userCanvas) return;
+  if (typeof Chart === "undefined") return;
+
+  const base = getVisibleHandovers();
+
+  const total = base.length;
+  const pending = base.filter(h => h.status === "Pending").length;
+  const completed = base.filter(h => h.status === "Completed").length;
+  const delayed = base.filter(h => h.status === "Delayed").length;
+  const inProgress = base.filter(h => h.status === "In Progress").length;
+
+  text("rep-total", total);
+  text("rep-pending", pending);
+  text("rep-completed", completed);
+  text("rep-delayed", delayed);
+
+  if (reportsStatusChart) reportsStatusChart.destroy();
+  reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: ["Pending", "In Progress", "Completed", "Delayed"],
+      datasets: [{ label: "Handovers", data: [pending, inProgress, completed, delayed] }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+      },
+    },
+  });
+
+  const byUser = {};
+  base.forEach(h => {
+    const key = h.actionBy || "Unknown";
+    byUser[key] = (byUser[key] || 0) + 1;
+  });
+
+  if (reportsUserChart) reportsUserChart.destroy();
+  reportsUserChart = new Chart(userCanvas.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(byUser),
+      datasets: [{ label: "Handovers", data: Object.values(byUser) }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+      },
+    },
+  });
+}
+
+/* =========================
+   Excel Export (XLSX)
+   ========================= */
+function exportHandoverExcel() {
+  const source = (filteredHandovers && filteredHandovers.length > 0) ? filteredHandovers : getVisibleHandovers();
+  const data = source.map(h => ({
+    "HNDR ID": h.id,
+    "From": h.from,
+    "To": h.to,
+    "Items": h.items,
+    "Long Description": h.longDescription || "",
+    "Priority": h.priority || "",
+    "Status": h.status || "",
+    "Date": h.date || "",
+    "Action By": h.actionBy || "",
+    "Attachment Name": h.attachmentName || "None",
+    "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
+  }));
+
+  if (data.length === 0) { alert("No records to export."); return; }
+  if (typeof XLSX === "undefined") { alert("XLSX library is not loaded."); return; }
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Handover List");
+  XLSX.writeFile(wb, "Handover_List.xlsx");
+}
+
+/* =========================
+   Users (Employees)
+   ========================= */
+function renderUsers() {
+  const tbody = $("users-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  users.forEach((u, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${u.name}</td>
+      <td>${u.role || ""}</td>
+      <td>${u.email || ""}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary btn-edit-user" data-index="${index}">
+          <i class="bi bi-pencil"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll(".btn-edit-user").forEach(btn => {
+    btn.onclick = () => openEditUser(parseInt(btn.getAttribute("data-index"), 10));
+  });
+}
+
+function initUserForm() {
+  const form = $("user-form");
+  const nameInput = $("user-name");
+  const roleInput = $("user-role");
+  const emailInput = $("user-email");
+  if (!form || !nameInput) return;
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    const role = roleInput ? roleInput.value.trim() : "";
+    const email = emailInput ? emailInput.value.trim() : "";
+    if (!name) return;
+
+    users.push({ name, role, email });
+    saveUsers();
+    renderUsers();
+    refreshUserSelectOptions();
+
+    nameInput.value = "";
+    if (roleInput) roleInput.value = "";
+    if (emailInput) emailInput.value = "";
+  });
+}
+
+function initUserModal() {
+  const modalEl = $("user-modal");
+  if (!modalEl) return;
+
+  userModal = new bootstrap.Modal(modalEl);
+  userEditForm = $("user-edit-form");
+  editUserNameInput = $("edit-user-name");
+  editUserRoleInput = $("edit-user-role");
+  editUserEmailInput = $("edit-user-email");
+
+  if (!userEditForm) return;
+  userEditForm.addEventListener("submit", e => {
+    e.preventDefault();
+    if (editingUserIndex === null) return;
+
+    const name = editUserNameInput ? editUserNameInput.value.trim() : "";
+    const role = editUserRoleInput ? editUserRoleInput.value.trim() : "";
+    const email = editUserEmailInput ? editUserEmailInput.value.trim() : "";
+    if (!name) return;
+
+    users[editingUserIndex] = { name, role, email };
+    saveUsers();
+    renderUsers();
+    refreshUserSelectOptions();
+    userModal.hide();
+  });
+}
+
+function openEditUser(index) {
+  const u = users[index];
+  if (!u || !userModal) return;
+  editingUserIndex = index;
+
+  if (editUserNameInput) editUserNameInput.value = u.name;
+  if (editUserRoleInput) editUserRoleInput.value = u.role || "";
+  if (editUserEmailInput) editUserEmailInput.value = u.email || "";
+
+  userModal.show();
+}
+
+/* =========================
+   Accounts (Admin)
+   ========================= */
+function fillAccountEmployeeOptions() {
+  if (!accountEmployeeSelect) return;
+  accountEmployeeSelect.innerHTML = "";
+
+  const optNone = document.createElement("option");
+  optNone.value = "";
+  optNone.textContent = "(No linked employee)";
+  accountEmployeeSelect.appendChild(optNone);
+
+  users.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.name;
+    opt.textContent = u.name;
+    accountEmployeeSelect.appendChild(opt);
+  });
+}
+
+function refreshActiveAccountSelect() {
+  const select = $("active-account-select");
+  if (!select) return;
+
+  const currentValue = activeAccountUsername || "";
+
+  select.innerHTML = "";
+  const optGuest = document.createElement("option");
+  optGuest.value = "";
+  optGuest.textContent = "Guest (no login)";
+  select.appendChild(optGuest);
+
+  accounts.forEach(acc => {
+    const opt = document.createElement("option");
+    opt.value = acc.username;
+    opt.textContent = `${acc.username} (${acc.role || "User"})`;
+    select.appendChild(opt);
+  });
+
+  select.value = currentValue;
+  select.onchange = () => {
+    activeAccountUsername = select.value || "";
+    saveActiveAccount();
+  };
+}
+
+function renderAccounts() {
+  const tbody = $("accounts-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  accounts.forEach((acc, index) => {
+    const badgeClass = acc.status === "Disabled"
+      ? "bg-secondary-subtle text-secondary"
+      : "bg-success-subtle text-success";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${acc.username}</td>
+      <td>${acc.employeeName || "-"}</td>
+      <td>${acc.role || ""}</td>
+      <td><span class="badge rounded-pill ${badgeClass}">${acc.status || "Active"}</span></td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${index}">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger btn-delete-account" data-index="${index}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll(".btn-edit-account").forEach(btn => {
+    btn.onclick = () => openEditAccount(parseInt(btn.getAttribute("data-index"), 10));
+  });
+
+  document.querySelectorAll(".btn-delete-account").forEach(btn => {
+    btn.onclick = () => {
+      const idx = parseInt(btn.getAttribute("data-index"), 10);
+      const acc = accounts[idx];
+      if (!acc) return;
+
+      const ok = confirm(`Are you sure you want to delete account "${acc.username}"?`);
+      if (!ok) return;
+
+      accounts.splice(idx, 1);
+      saveAccounts();
+      renderAccounts();
+      refreshActiveAccountSelect();
+
+      if (acc.username === getLoggedInUsername()) {
+        setLoggedInUsername("");
+        activeAccountUsername = "";
+        saveActiveAccount();
+        showLoginPage();
+        updateCurrentUserLabel();
+      }
+    };
+  });
+
+  refreshActiveAccountSelect();
+}
+
+function initAccountModal() {
+  const modalEl = $("account-modal");
+  if (!modalEl) return;
+
+  accountModal = new bootstrap.Modal(modalEl);
+  accountForm = $("account-form");
+
+  accountUsernameInput = $("account-username");
+  accountEmployeeSelect = $("account-employee");
+  accountRoleSelect = $("account-role");
+  accountStatusSelect = $("account-status");
+  accountPasswordInput = $("account-password");
+
+  fillAccountEmployeeOptions();
+
+  const btnAdd = $("btn-add-account");
+  if (btnAdd) {
+    btnAdd.onclick = () => {
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") { alert("Only Admin can add accounts."); return; }
+
+      isEditAccount = false;
+      editingAccountIndex = null;
+      accountForm.reset();
+      fillAccountEmployeeOptions();
+      accountStatusSelect.value = "Active";
+      accountPasswordInput.value = "";
+      accountModal.show();
+    };
   }
 
-  // ===== Admin: Wipe ALL data from this browser =====
-  function wipeAllAppData() {
+  if (!accountForm) return;
+  accountForm.addEventListener("submit", e => {
+    e.preventDefault();
+
+    const accLogged = getLoggedInAccount();
+    if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
+
+    const username = accountUsernameInput.value.trim();
+    const employeeName = accountEmployeeSelect.value || "";
+    const role = accountRoleSelect.value || "User";
+    const status = accountStatusSelect.value || "Active";
+    const rawPassword = (accountPasswordInput.value || "").trim();
+
+    if (!username) return;
+
+    if (isEditAccount && editingAccountIndex !== null) {
+      const existing = accounts[editingAccountIndex];
+      accounts[editingAccountIndex] = {
+        ...existing,
+        username,
+        employeeName,
+        role,
+        status,
+        password: rawPassword ? rawPassword : existing.password,
+      };
+    } else {
+      const password = rawPassword || "1234";
+      accounts.push({ username, employeeName, role, status, password });
+    }
+
+    saveAccounts();
+    renderAccounts();
+    accountPasswordInput.value = "";
+    accountModal.hide();
+  });
+}
+
+function openEditAccount(index) {
+  const acc = accounts[index];
+  if (!acc || !accountModal) return;
+
+  const accLogged = getLoggedInAccount();
+  if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
+
+  isEditAccount = true;
+  editingAccountIndex = index;
+
+  fillAccountEmployeeOptions();
+  accountUsernameInput.value = acc.username;
+  accountEmployeeSelect.value = acc.employeeName || "";
+  accountRoleSelect.value = acc.role || "User";
+  accountStatusSelect.value = acc.status || "Active";
+  accountPasswordInput.value = "";
+  accountModal.show();
+}
+
+/* =========================
+   Selects & Options
+   ========================= */
+function setSelectOptions(select, values, includeEmpty, emptyLabel) {
+  const current = select.value;
+  select.innerHTML = "";
+
+  if (includeEmpty) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = emptyLabel || "All";
+    select.appendChild(opt);
+  }
+
+  values.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+  });
+
+  if (current && values.includes(current)) select.value = current;
+}
+
+function refreshUserSelectOptions() {
+  const names = users.map(u => u.name);
+
+  const filterFrom = $("filter-from");
+  const filterTo = $("filter-to");
+  if (filterFrom) setSelectOptions(filterFrom, names, true, "All");
+  if (filterTo) setSelectOptions(filterTo, names, true, "All");
+
+  if (inputTo && inputActionBy) {
+    setSelectOptions(inputTo, names, false);
+    setSelectOptions(inputActionBy, names, false);
+  }
+
+  fillAccountEmployeeOptions();
+}
+
+function setupFromForNewHandover() {
+  if (!inputFrom) return;
+
+  const acc = getLoggedInAccount();
+  const linkedName = acc?.employeeName?.trim();
+
+  inputFrom.innerHTML = "";
+
+  if (linkedName) {
+    const opt = document.createElement("option");
+    opt.value = linkedName;
+    opt.textContent = linkedName;
+    inputFrom.appendChild(opt);
+    inputFrom.value = linkedName;
+  } else {
+    const names = users.map(u => u.name);
+    setSelectOptions(inputFrom, names, false);
+    if (names.length > 0) inputFrom.value = names[0];
+  }
+
+  inputFrom.setAttribute("disabled", "disabled");
+}
+
+/* =========================
+   Handover Modal
+   ========================= */
+function setHandoverFormReadOnly(readOnly) {
+  const fields = [inputTo, inputItems, inputLongDesc, inputPriority, inputStatus, inputDate, inputActionBy, attachmentInput];
+  fields.forEach(el => {
+    if (!el) return;
+    if (readOnly) el.setAttribute("disabled", "disabled");
+    else el.removeAttribute("disabled");
+  });
+
+  if (inputFrom) inputFrom.setAttribute("disabled", "disabled");
+  if (handoverSaveBtn) handoverSaveBtn.style.display = readOnly ? "none" : "inline-block";
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function initHandoverModal() {
+  const modalEl = $("handover-modal");
+  if (!modalEl) return;
+
+  handoverModal = new bootstrap.Modal(modalEl);
+  handoverForm = $("handover-form");
+  modalTitleEl = $("handover-modal-title");
+
+  inputId = $("handover-id");
+  inputFrom = $("handover-from");
+  inputTo = $("handover-to");
+  inputItems = $("handover-items");
+  inputLongDesc = $("handover-long-desc");
+  inputPriority = $("handover-priority");
+  inputStatus = $("handover-status");
+  inputDate = $("handover-date");
+  inputActionBy = $("handover-action-by");
+  attachmentInput = $("handover-attachment");
+  currentAttachmentInfo = $("current-attachment-info");
+  handoverSaveBtn = $("handover-save-btn");
+
+  refreshUserSelectOptions();
+
+  const openButtons = [ $("btn-add-handover"), $("btn-add-handover-2") ].filter(Boolean);
+
+  openButtons.forEach(btn => {
+    btn.onclick = () => {
+      const acc = getLoggedInAccount();
+      if (!acc) { alert("You must be logged in to create a handover."); return; }
+      if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
+      if (acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
+
+      isEditMode = false;
+      editingId = null;
+      editingReadOnly = false;
+
+      handoverForm.reset();
+      inputId.value = generateNextId();
+      inputDate.value = new Date().toISOString().slice(0, 10);
+      if (currentAttachmentInfo) currentAttachmentInfo.textContent = "No attachment";
+      if (attachmentInput) attachmentInput.value = "";
+      inputLongDesc.value = "";
+      inputPriority.value = "P3";
+
+      refreshUserSelectOptions();
+      setupFromForNewHandover();
+
+      if (users.length > 0) inputTo.value = users[0].name;
+
+      const loggedAcc = getLoggedInAccount();
+      if (loggedAcc && loggedAcc.employeeName) inputActionBy.value = loggedAcc.employeeName;
+      else if (users.length > 0) inputActionBy.value = users[0].name;
+
+      setHandoverFormReadOnly(false);
+      modalTitleEl.textContent = "New Handover";
+      handoverModal.show();
+    };
+  });
+
+  if (!handoverForm) return;
+
+  handoverForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (editingReadOnly) return;
+
     const acc = getLoggedInAccount();
-    if (!acc || acc.role !== "Admin") {
-      alert("Only Admin can wipe all data.");
+    if (!acc) { alert("You must be logged in to save."); return; }
+    if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
+    if (!isEditMode && acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
+
+    const from = inputFrom.value;
+    const to = inputTo.value;
+    const items = inputItems.value;
+    const longDescription = inputLongDesc.value;
+    const priority = inputPriority.value;
+    const status = inputStatus.value;
+    const date = inputDate.value;
+    const actionBy = inputActionBy.value;
+    const file = (attachmentInput && attachmentInput.files) ? (attachmentInput.files[0] || null) : null;
+
+    let attachmentName = null;
+    let attachmentType = null;
+    let attachmentSize = null;
+    let attachmentDataUrl = null;
+
+    if (isEditMode) {
+      const current = handovers.find(h => h.id === editingId);
+      if (current) {
+        if (!canEditHandover(current)) { alert("You are not allowed to edit this handover."); return; }
+        attachmentName = current.attachmentName || null;
+        attachmentType = current.attachmentType || null;
+        attachmentSize = current.attachmentSize || null;
+        attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
+      }
+    }
+
+    if (file) {
+      if (file.size > MAX_ATTACHMENT_SIZE) {
+        alert("Attachment is too large (max ~3MB). Please attach a smaller file.");
+        return;
+      }
+      attachmentName = file.name;
+      attachmentType = file.type || null;
+      attachmentSize = file.size;
+      attachmentDataUrl = await readFileAsDataUrl(file);
+    }
+
+    if (isEditMode) {
+      const idx = handovers.findIndex(h => h.id === editingId);
+      if (idx === -1) return;
+
+      handovers[idx] = {
+        ...handovers[idx],
+        from, to, items, longDescription, priority, status, date, actionBy,
+        attachmentName, attachmentType, attachmentSize, attachmentDataUrl,
+      };
+    } else {
+      const id = inputId.value;
+      handovers.push({
+        id, from, to, items, longDescription, priority, status, date, actionBy,
+        attachmentName, attachmentType, attachmentSize, attachmentDataUrl,
+      });
+    }
+
+    saveHandovers();
+    applyFilters();
+    handoverModal.hide();
+    if (attachmentInput) attachmentInput.value = "";
+  });
+}
+
+function openEditHandover(id) {
+  const h = handovers.find(x => x.id === id);
+  if (!h) return;
+
+  isEditMode = true;
+  editingId = id;
+
+  handoverForm.reset();
+  refreshUserSelectOptions();
+
+  if (inputFrom) {
+    inputFrom.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = h.from || "";
+    opt.textContent = h.from || "";
+    inputFrom.appendChild(opt);
+    inputFrom.value = h.from || "";
+    inputFrom.setAttribute("disabled", "disabled");
+  }
+
+  inputId.value = h.id;
+  inputTo.value = h.to;
+  inputItems.value = h.items;
+  inputLongDesc.value = h.longDescription || "";
+  inputPriority.value = h.priority || "P3";
+  inputStatus.value = h.status;
+  inputDate.value = h.date;
+  inputActionBy.value = h.actionBy || (users[0] ? users[0].name : "");
+  if (attachmentInput) attachmentInput.value = "";
+
+  if (currentAttachmentInfo) {
+    if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
+      currentAttachmentInfo.textContent =
+        "Current attachment: " + h.attachmentName +
+        (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
+    } else {
+      currentAttachmentInfo.textContent = "No attachment";
+    }
+  }
+
+  const editable = canEditHandover(h);
+  editingReadOnly = !editable;
+  setHandoverFormReadOnly(!editable);
+
+  modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
+  handoverModal.show();
+}
+
+/* =========================
+   Navigation / Views
+   ========================= */
+function setActiveView(view, save = true) {
+  const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
+  const views = document.querySelectorAll(".view-section");
+
+  if (view === "admin-users" || view === "deleted-handovers") {
+    const acc = getLoggedInAccount();
+    if (!acc || acc.role !== "Admin") { alert("Only Admin can access this page."); return; }
+  }
+
+  navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("data-view") === view));
+  views.forEach(section => section.classList.toggle("d-none", section.getAttribute("data-view") !== view));
+
+  if (save) localStorage.setItem("warehouseActiveView", view);
+}
+
+function initSidebarNavigation() {
+  const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
+  navLinks.forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const view = link.getAttribute("data-view");
+      if (!view) return;
+      setActiveView(view, true);
+    });
+  });
+}
+
+/* =========================
+   Login / Logout
+   ========================= */
+function validateLogin(username, password) {
+  normalizeAccountsPasswords();
+  const acc = accounts.find(a => a.username === username);
+  if (!acc) return { ok: false, message: "Invalid username or password." };
+  if (acc.status === "Disabled") return { ok: false, message: "This account is disabled." };
+  if (acc.password !== password) return { ok: false, message: "Invalid username or password." };
+  return { ok: true, account: acc };
+}
+
+function showLoginPage() {
+  const loginPageEl = $("login-page");
+  const appShellEl = $("app-shell");
+  if (loginPageEl) loginPageEl.style.display = "flex";
+  if (appShellEl) appShellEl.style.display = "none";
+}
+
+function showApp() {
+  const loginPageEl = $("login-page");
+  const appShellEl = $("app-shell");
+  if (loginPageEl) loginPageEl.style.display = "none";
+  if (appShellEl) appShellEl.style.display = "flex";
+  refreshActiveAccountSelect();
+  updateCurrentUserLabel();
+}
+
+function updateCurrentUserLabel() {
+  const label = $("current-user-label");
+  if (!label) return;
+  const acc = getLoggedInAccount();
+  label.textContent = acc ? `Logged in as: ${acc.username} (${acc.role || "User"})` : "Not logged in";
+}
+
+function initLogin() {
+  const loginForm = $("login-form");
+  const loginUserInput = $("login-username");
+  const loginPassInput = $("login-password");
+  const loginErrorEl = $("login-error");
+  if (!loginForm) return;
+
+  loginForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const username = loginUserInput.value.trim();
+    const password = loginPassInput.value;
+
+    const result = validateLogin(username, password);
+    if (!result.ok) {
+      if (loginErrorEl) {
+        loginErrorEl.textContent = result.message;
+        loginErrorEl.style.display = "block";
+      }
       return;
     }
 
-    const ok = confirm(
-      "WARNING:\nThis will DELETE ALL data stored in this browser for this app:\n" +
-      "- Handovers\n- Deleted Handovers\n- Users\n- Accounts\n- ID Counter\n\n" +
-      "This cannot be undone unless you have an exported JSON backup.\n\n" +
-      "Do you want to continue?"
-    );
-    if (!ok) return;
+    if (loginErrorEl) loginErrorEl.style.display = "none";
 
-    try {
-      localStorage.removeItem("warehouseHandovers");
-      localStorage.removeItem("warehouseDeletedHandovers");
-      localStorage.removeItem("warehouseUsers");
-      localStorage.removeItem("warehouseAccounts");
-      localStorage.removeItem("warehouseActiveAccountUsername");
-      localStorage.removeItem("warehouseLoggedInAccountUsername");
-      localStorage.removeItem("warehouseActiveView");
-      localStorage.removeItem(ID_COUNTER_STORAGE_KEY);
+    activeAccountUsername = result.account.username;
+    saveActiveAccount();
+    setLoggedInUsername(activeAccountUsername);
 
-      handovers = [];
-      filteredHandovers = [];
-      deletedHandovers = [];
-      users = [];
-      accounts = [];
-      activeAccountUsername = "";
+    filteredHandovers = getVisibleHandovers();
+    showApp();
+    renderTable();
+    renderAccounts();
+    renderReports();
+    renderDeletedHandovers();
 
-      updateCurrentUserLabel();
-      showLoginPage();
+    const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
+    setActiveView(savedView, false);
+  });
 
-      alert("All app data has been wiped from this browser.");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to wipe data. Please check browser storage permissions.");
-    }
-  }
-
-  // ✅ Delegation: works even if you click the icon inside the button
-  function initWipeAllDataButton() {
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest("#btn-wipe-all-data");
-      if (!btn) return;
-      wipeAllAppData();
-    });
-  }
-
-  // ===== Login Handling =====
-  function validateLogin(username, password) {
-    normalizeAccountsPasswords();
-    const acc = accounts.find(a => a.username === username);
-    if (!acc) return { ok: false, message: "Invalid username or password." };
-    if (acc.status === "Disabled") return { ok: false, message: "This account is disabled." };
-    if (acc.password !== password) return { ok: false, message: "Invalid username or password." };
-    return { ok: true, account: acc };
-  }
-
-  function showLoginPage() {
-    const loginPageEl = document.getElementById("login-page");
-    const appShellEl = document.getElementById("app-shell");
-    if (loginPageEl) loginPageEl.style.display = "flex";
-    if (appShellEl) appShellEl.style.display = "none";
-  }
-
-  function showApp() {
-    const loginPageEl = document.getElementById("login-page");
-    const appShellEl = document.getElementById("app-shell");
-    if (loginPageEl) loginPageEl.style.display = "none";
-    if (appShellEl) appShellEl.style.display = "flex";
-    refreshActiveAccountSelect();
-    updateCurrentUserLabel();
-  }
-
-  function updateCurrentUserLabel() {
-    const label = document.getElementById("current-user-label");
-    if (!label) return;
-    const acc = getLoggedInAccount();
-    label.textContent = acc ? `Logged in as: ${acc.username} (${acc.role || "User"})` : "Not logged in";
-  }
-
-  function initLogin() {
-    const loginForm = document.getElementById("login-form");
-    const loginUserInput = document.getElementById("login-username");
-    const loginPassInput = document.getElementById("login-password");
-    const loginErrorEl = document.getElementById("login-error");
-    if (!loginForm) return;
-
-    loginForm.addEventListener("submit", e => {
-      e.preventDefault();
-
-      const username = loginUserInput ? loginUserInput.value.trim() : "";
-      const password = loginPassInput ? loginPassInput.value : "";
-
-      const result = validateLogin(username, password);
-      if (!result.ok) {
-        if (loginErrorEl) {
-          loginErrorEl.textContent = result.message;
-          loginErrorEl.style.display = "block";
-        }
-        return;
-      }
-
-      if (loginErrorEl) loginErrorEl.style.display = "none";
-      activeAccountUsername = result.account.username;
+  const storedLogin = getLoggedInUsername();
+  if (storedLogin) {
+    const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
+    if (acc) {
+      activeAccountUsername = storedLogin;
       saveActiveAccount();
-      setLoggedInUsername(activeAccountUsername);
-
       filteredHandovers = getVisibleHandovers();
       showApp();
       renderTable();
       renderAccounts();
       renderReports();
       renderDeletedHandovers();
-
       const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
       setActiveView(savedView, false);
-    });
-
-    const storedLogin = getLoggedInUsername();
-    if (storedLogin) {
-      const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
-      if (acc) {
-        activeAccountUsername = storedLogin;
-        saveActiveAccount();
-        filteredHandovers = getVisibleHandovers();
-        showApp();
-        renderTable();
-        renderAccounts();
-        renderReports();
-        renderDeletedHandovers();
-        const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
-        setActiveView(savedView, false);
-        return;
-      } else {
-        setLoggedInUsername("");
-      }
-    }
-
-    showLoginPage();
-  }
-
-  // ===== JSON Export/Import =====
-  function initExportJson() {
-    const btn = document.getElementById("btn-export-json");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") {
-        alert("Only Admin can export JSON.");
-        return;
-      }
-
-      const accountsExport = accounts.map(acc => ({
-        username: acc.username,
-        employeeName: acc.employeeName,
-        role: acc.role,
-        status: acc.status,
-      }));
-
-      const data = {
-        exportedAt: new Date().toISOString(),
-        handovers,
-        users,
-        accounts: accountsExport,
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `warehouse-data-${dateStr}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  function initImportJson() {
-    const btn = document.getElementById("btn-import-json");
-    const input = document.getElementById("import-json-input");
-    if (!btn || !input) return;
-
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") {
-        alert("Only Admin can import JSON.");
-        return;
-      }
-      input.click();
-    });
-
-    input.addEventListener("change", async e => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        if (!data || !Array.isArray(data.handovers) || !Array.isArray(data.users) || !Array.isArray(data.accounts)) {
-          alert("Invalid JSON structure.\nThe file must contain: handovers, users, and accounts arrays.");
-          input.value = "";
-          return;
-        }
-
-        const ok = confirm(
-          "This will replace all current data (handovers, users, accounts) in this browser with the data from the file.\nDo you want to continue?"
-        );
-        if (!ok) { input.value = ""; return; }
-
-        handovers = data.handovers;
-        users = data.users;
-        accounts = data.accounts;
-        normalizeAccountsPasswords();
-
-        deletedHandovers = [];
-        resequenceAllHandoverIdsFromOne();
-        saveHandovers();
-        saveDeletedHandovers();
-
-        filteredHandovers = getVisibleHandovers();
-
-        renderUsers();
-        refreshUserSelectOptions();
-        renderTable();
-        renderAccounts();
-        renderReports();
-        refreshActiveAccountSelect();
-        renderDeletedHandovers();
-
-        alert("Data imported successfully.");
-      } catch (err) {
-        console.error(err);
-        alert("An error occurred while reading or parsing the JSON file.");
-      } finally {
-        input.value = "";
-      }
-    });
-  }
-
-  // ===== Logout =====
-  function initLogout() {
-    const btn = document.getElementById("btn-logout");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
+      return;
+    } else {
       setLoggedInUsername("");
-      activeAccountUsername = "";
-      saveActiveAccount();
-      filteredHandovers = [];
-      updateCurrentUserLabel();
-      showLoginPage();
-    });
+    }
   }
 
-  // ===== SAFE event binder =====
-  function on(id, event, handler) {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener(event, handler);
-  }
+  showLoginPage();
+}
 
-  // ===== DOMContentLoaded =====
-  document.addEventListener("DOMContentLoaded", () => {
-    on("filter-from", "change", applyFilters);
-    on("filter-to", "change", applyFilters);
-    on("filter-status", "change", applyFilters);
-    on("filter-priority", "change", applyFilters);
-    on("filter-date-from", "change", applyFilters);
-    on("filter-date-to", "change", applyFilters);
-    on("filter-search", "input", applyFilters);
+function initLogout() {
+  const btn = $("btn-logout");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    setLoggedInUsername("");
+    activeAccountUsername = "";
+    saveActiveAccount();
+    filteredHandovers = [];
+    updateCurrentUserLabel();
+    showLoginPage();
+  });
+}
 
-    on("btn-reset-filters", "click", resetFilters);
-    on("btn-export-excel", "click", exportHandoverExcel);
+/* =========================
+   JSON Export/Import
+   ========================= */
+function initExportJson() {
+  const btn = $("btn-export-json");
+  if (!btn) return;
 
-    loadUsers();
-    loadHandovers();
-    loadDeletedHandovers();
+  btn.addEventListener("click", () => {
+    const acc = getLoggedInAccount();
+    if (!acc || acc.role !== "Admin") { alert("Only Admin can export JSON."); return; }
+
+    const accountsExport = accounts.map(acc => ({
+      username: acc.username,
+      employeeName: acc.employeeName,
+      role: acc.role,
+      status: acc.status,
+    }));
+
+    const data = { exportedAt: new Date().toISOString(), handovers, users, accounts: accountsExport };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `warehouse-data-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
+function initImportJson() {
+  const btn = $("btn-import-json");
+  const input = $("import-json-input");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", () => {
+    const acc = getLoggedInAccount();
+    if (!acc || acc.role !== "Admin") { alert("Only Admin can import JSON."); return; }
+    input.click();
+  });
+
+  input.addEventListener("change", async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data || !Array.isArray(data.handovers) || !Array.isArray(data.users) || !Array.isArray(data.accounts)) {
+        alert("Invalid JSON structure.\nThe file must contain: handovers, users, and accounts arrays.");
+        input.value = "";
+        return;
+      }
+
+      const ok = confirm(
+        "This will replace all current data (handovers, users, accounts) in this browser with the data from the file.\nDo you want to continue?"
+      );
+      if (!ok) { input.value = ""; return; }
+
+      handovers = data.handovers;
+      users = data.users;
+      accounts = data.accounts;
+      normalizeAccountsPasswords();
+
+      deletedHandovers = [];
+      resequenceAllHandoverIdsFromOne();
+
+      saveHandovers();
+      saveDeletedHandovers();
+      saveUsers();
+      saveAccounts();
+
+      filteredHandovers = getVisibleHandovers();
+
+      renderUsers();
+      refreshUserSelectOptions();
+      renderTable();
+      renderAccounts();
+      renderReports();
+      refreshActiveAccountSelect();
+      renderDeletedHandovers();
+
+      alert("Data imported successfully.");
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while reading or parsing the JSON file.");
+    } finally {
+      input.value = "";
+    }
+  });
+}
+
+/* =========================
+   Resequence Button
+   ========================= */
+function initResequenceButton() {
+  const btn = $("btn-resequence-ids");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    const acc = getLoggedInAccount();
+    if (!acc || acc.role !== "Admin") { alert("Only Admin can resequence HNDR IDs."); return; }
+
+    const ok = confirm(
+      "This will resequence ALL HNDR IDs starting from 0001 based on date (including deleted handovers).\nDo you want to continue?"
+    );
+    if (!ok) return;
 
     resequenceAllHandoverIdsFromOne();
     saveHandovers();
     saveDeletedHandovers();
 
-    loadAccounts();
-    loadActiveAccount();
-
-    initSidebarNavigation();
-    initUserForm();
-    initUserModal();
-    renderUsers();
-
-    initHandoverModal();
-    initAccountModal();
-
-    refreshUserSelectOptions();
-    renderAccounts();
-
-    initExportJson();
-    initImportJson();
-
-    refreshActiveAccountSelect();
-    initLogout();
-
-    initResequenceButton();
-    initWipeAllDataButton(); // ✅
-
-    initLogin();
+    filteredHandovers = getVisibleHandovers();
+    renderTable();
     renderDeletedHandovers();
+
+    alert("HNDR IDs resequenced successfully.");
   });
+}
+
+/* =========================
+   Wipe All Data (Admin)
+   ========================= */
+function wipeAllAppData() {
+  const acc = getLoggedInAccount();
+  if (!acc || acc.role !== "Admin") { alert("Only Admin can wipe all data."); return; }
+
+  const ok = confirm(
+    "WARNING:\nThis will DELETE ALL data stored in this browser for this app:\n" +
+    "- Handovers\n- Deleted Handovers\n- Users\n- Accounts\n- ID Counter\n\n" +
+    "This cannot be undone unless you have an exported JSON backup.\n\n" +
+    "Do you want to continue?"
+  );
+  if (!ok) return;
+
+  try {
+    localStorage.removeItem("warehouseHandovers");
+    localStorage.removeItem("warehouseDeletedHandovers");
+    localStorage.removeItem("warehouseUsers");
+    localStorage.removeItem("warehouseAccounts");
+    localStorage.removeItem("warehouseActiveAccountUsername");
+    localStorage.removeItem("warehouseLoggedInAccountUsername");
+    localStorage.removeItem("warehouseActiveView");
+    localStorage.removeItem(ID_COUNTER_STORAGE_KEY);
+
+    handovers = [];
+    filteredHandovers = [];
+    deletedHandovers = [];
+    users = [];
+    accounts = [];
+    activeAccountUsername = "";
+
+    updateCurrentUserLabel();
+    showLoginPage();
+    alert("All app data has been wiped from this browser.");
+  } catch (e) {
+    console.error(e);
+    alert("Failed to wipe data. Please check browser storage permissions.");
+  }
+}
+
+function initWipeAllDataButton() {
+  // delegation (works even if click on icon)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#btn-wipe-all-data");
+    if (!btn) return;
+    wipeAllAppData();
+  });
+}
+
+/* =========================
+   Startup (Safe)
+   ========================= */
+document.addEventListener("DOMContentLoaded", () => {
+  // Filters safe
+  on("filter-from", "change", applyFilters);
+  on("filter-to", "change", applyFilters);
+  on("filter-status", "change", applyFilters);
+  on("filter-priority", "change", applyFilters);
+  on("filter-date-from", "change", applyFilters);
+  on("filter-date-to", "change", applyFilters);
+  on("filter-search", "input", applyFilters);
+
+  on("btn-reset-filters", "click", resetFilters);
+  on("btn-export-excel", "click", exportHandoverExcel);
+
+  loadUsers();
+  loadHandovers();
+  loadDeletedHandovers();
+  loadAccounts();
+  loadActiveAccount();
+
+  // resequence once on load
+  resequenceAllHandoverIdsFromOne();
+  saveHandovers();
+  saveDeletedHandovers();
+
+  initSidebarNavigation();
+  initUserForm();
+  initUserModal();
+  renderUsers();
+
+  initHandoverModal();
+  initAccountModal();
+  refreshUserSelectOptions();
+  renderAccounts();
+
+  initExportJson();
+  initImportJson();
+  initLogout();
+  initResequenceButton();
+
+  initAttachmentButtons(); // ✅ Fix attachments
+  initWipeAllDataButton(); // ✅ Wipe button
+
+  initLogin();
+  renderDeletedHandovers();
+});
 </script>
