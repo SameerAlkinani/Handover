@@ -6,16 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Bootstrap 5 -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
   <!-- Icons -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -24,292 +18,171 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
-    :root {
-      --primary-color: #145da0;
-      --primary-soft: #f0f6ff;
-      --accent-color: #f5a623;
-      --bg-color: #f4f5f7;
+    :root{
+      --nav:#0c2340;
+      --bg:#f4f5f7;
+      --card:#ffffff;
+      --border:#e1e4eb;
+      --muted:#6b7280;
+      --accent:#145da0;
     }
-
-    body {
-      background: var(--bg-color);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    body{background:var(--bg); font-family:system-ui,-apple-system,"Segoe UI",sans-serif;}
+    .app-shell{min-height:100vh; display:flex;}
+    .sidebar{
+      width:260px; background:var(--nav); color:#fff;
+      padding:1.5rem 1.25rem; display:flex; flex-direction:column;
     }
-
-    /* ===== Login Page ===== */
-    #login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg-color);
-      padding: 1rem;
+    .sidebar-brand{display:flex; gap:.6rem; align-items:center; margin-bottom:1.5rem;}
+    .brand-icon{
+      width:36px; height:36px; border-radius:10px;
+      background:linear-gradient(135deg,#2e86de,#48dbfb);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800;
     }
-
-    .login-card {
-      max-width: 420px;
-      width: 100%;
-      border-radius: 1rem;
-      border: 1px solid #e1e4eb;
-      background: #fff;
+    .sidebar-nav .nav-link{
+      color:#cbd5f5; padding:.55rem .75rem; border-radius:.6rem;
+      display:flex; gap:.5rem; align-items:center; margin-bottom:.35rem;
     }
-
-    /* ===== App Shell ===== */
-    .app-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: row;
+    .sidebar-nav .nav-link.active,.sidebar-nav .nav-link:hover{background:rgba(255,255,255,.12); color:#fff;}
+    .sidebar-footer{margin-top:auto; color:#9fb3ff; font-size:.8rem;}
+    .main-panel{flex:1; padding:1.25rem 1.25rem 2rem; display:flex; flex-direction:column; gap:1rem;}
+    .top-bar{display:flex; align-items:center; justify-content:space-between; gap:1rem;}
+    .top-title{font-size:1.35rem; font-weight:700;}
+    .cards-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem;}
+    .stat-card,.panel-card{
+      background:var(--card); border:1px solid var(--border);
+      border-radius:1rem; padding:1rem;
     }
-
-    .sidebar {
-      width: 260px;
-      background: #0c2340;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem 1.25rem;
+    .stat-label{font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);}
+    .stat-value{font-size:1.5rem; font-weight:800;}
+    .filters-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.75rem; align-items:end;}
+    table thead th{
+      font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+      background:#f9fafb; position:sticky; top:0; z-index:1; border-bottom-width:1px;
     }
+    .table-card--resizable{resize:vertical; overflow:hidden; min-height:240px; max-height:80vh; display:flex; flex-direction:column;}
+    .table-card--resizable .table-responsive{flex:1 1 auto; overflow:auto;}
+    .status-badge{border-radius:999px; padding:.15rem .75rem; font-size:.75rem; font-weight:600;}
+    .status-pending{background:#fff7ed; color:#c05621;}
+    .status-inprogress{background:#eff6ff; color:#1d4ed8;}
+    .status-completed{background:#ecfdf3; color:#166534;}
+    .status-delayed{background:#fef2f2; color:#b91c1c;}
+    .view-section{display:block;}
+    .view-section.d-none{display:none !important;}
 
-    .sidebar-brand {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      margin-bottom: 2rem;
+    /* Auth / Setup pages */
+    .auth-page{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;}
+    .auth-card{max-width:520px; width:100%; background:#fff; border:1px solid var(--border); border-radius:1rem; padding:1.25rem;}
+    .auth-sub{color:var(--muted); font-size:.9rem;}
+
+    @media (max-width: 992px){
+      .app-shell{flex-direction:column;}
+      .sidebar{width:100%; flex-direction:row; gap:1rem; align-items:center;}
+      .sidebar-nav{display:flex; flex-wrap:wrap; gap:.35rem;}
+      .cards-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
-
-    .sidebar-brand-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #2e86de, #48dbfb);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-
-    .sidebar-nav .nav-link {
-      color: #cbd5f5;
-      padding: 0.55rem 0.75rem;
-      border-radius: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.95rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .sidebar-nav .nav-link.active,
-    .sidebar-nav .nav-link:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-
-    .sidebar-footer {
-      margin-top: auto;
-      font-size: 0.8rem;
-      color: #9fb3ff;
-    }
-
-    .main-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem 1.5rem 2rem;
-      gap: 1rem;
-    }
-
-    .top-bar {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      justify-content: space-between;
-    }
-
-    .top-bar-title {
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem;
-    }
-
-    .stat-card {
-      border-radius: 1rem;
-      border: 1px solid #e1e4eb;
-      background: #fff;
-      padding: 0.9rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #6b7280;
-    }
-
-    .stat-value {
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    .stat-trend {
-      font-size: 0.75rem;
-    }
-
-    .filters-card,
-    .table-card,
-    .chart-card {
-      border-radius: 1rem;
-      border: 1px solid #e1e4eb;
-      background: #fff;
-      padding: 1rem 1.1rem;
-    }
-
-    .filters-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 0.75rem;
-      align-items: end;
-    }
-
-    .table-responsive {
-      margin-top: 0.75rem;
-      overflow: auto;
-    }
-
-    table thead th {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #6b7280;
-      border-bottom-width: 1px;
-      background: #f9fafb;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    table tbody td {
-      vertical-align: middle;
-      font-size: 0.9rem;
-    }
-
-    .status-badge {
-      border-radius: 999px;
-      padding: 0.15rem 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-
-    .status-pending { background: #fff7ed; color: #c05621; }
-    .status-completed { background: #ecfdf3; color: #166534; }
-    .status-delayed { background: #fef2f2; color: #b91c1c; }
-    .status-inprogress { background: #eff6ff; color: #1d4ed8; }
-
-    .table-card--resizable {
-      resize: vertical;
-      overflow: hidden;
-      min-height: 220px;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .table-card--resizable .table-responsive {
-      flex: 1 1 auto;
-      max-height: none;
-      overflow-y: auto;
-    }
-
-    @media (max-width: 992px) {
-      .app-shell { flex-direction: column; }
-      .sidebar { width: 100%; flex-direction: row; align-items: center; gap: 1rem; }
-      .sidebar-nav { display: flex; flex-direction: row; gap: 0.4rem; flex-wrap: wrap; }
-      .main-panel { padding: 1rem; }
-      .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    @media (max-width: 576px) {
-      .cards-grid { grid-template-columns: 1fr; }
-      .filters-grid { grid-template-columns: 1fr; }
+    @media (max-width:576px){
+      .cards-grid{grid-template-columns:1fr;}
+      .filters-grid{grid-template-columns:1fr;}
     }
   </style>
 </head>
+
 <body>
 
-<!-- ===== Login Page ===== -->
-<div id="login-page">
-  <div class="login-card shadow-sm p-4">
-    <h4 class="mb-3 text-center">Warehouse Handover Login</h4>
-    <form id="login-form">
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input type="text" id="login-username" class="form-control" autocomplete="username" required />
+<!-- ===== First-run Setup (Create Admin) ===== -->
+<div id="setup-page" class="auth-page" style="display:none;">
+  <div class="auth-card shadow-sm">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <div class="brand-icon">WH</div>
+      <div>
+        <div class="fw-bold">First time setup</div>
+        <div class="auth-sub">Create your Admin account (no default accounts are created).</div>
       </div>
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input type="password" id="login-password" class="form-control" autocomplete="current-password" required />
+    </div>
+
+    <form id="setup-form" class="mt-3">
+      <div class="mb-2">
+        <label class="form-label">Admin username</label>
+        <input id="setup-username" class="form-control" required />
       </div>
-      <div id="login-error" class="text-danger small mb-2" style="display:none;"></div>
-      <button type="submit" class="btn btn-primary w-100">Login</button>
+      <div class="mb-2">
+        <label class="form-label">Admin password</label>
+        <input id="setup-password" type="password" class="form-control" required />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Linked employee name (optional)</label>
+        <input id="setup-employee" class="form-control" placeholder="e.g. Sameer Jabbar" />
+        <div class="form-text">You can add employees later. Linking helps auto-fill “From” and “Action By”.</div>
+      </div>
+
+      <div id="setup-error" class="text-danger small mt-2" style="display:none;"></div>
+      <button class="btn btn-primary w-100 mt-2" type="submit">
+        <i class="bi bi-shield-lock"></i> Create Admin
+      </button>
     </form>
-    <div class="mt-3 text-muted small text-center">
-      Use a username from <strong>Users (Admin)</strong>.<br/>
-      Password is set by the <strong>Admin</strong> for each account (initial default is <strong>1234</strong> for new accounts).
+
+    <div class="auth-sub mt-3">
+      Notes:
+      <ul class="mb-0">
+        <li>All data is stored in this browser only (prototype).</li>
+        <li>Use <b>Export/Import JSON</b> later to move data to another device.</li>
+      </ul>
     </div>
   </div>
 </div>
 
-<!-- ===== App Shell ===== -->
+<!-- ===== Login ===== -->
+<div id="login-page" class="auth-page" style="display:none;">
+  <div class="auth-card shadow-sm">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <div class="brand-icon">WH</div>
+      <div>
+        <div class="fw-bold">Warehouse Handover Login</div>
+        <div class="auth-sub">Sign in to manage your handovers.</div>
+      </div>
+    </div>
+
+    <form id="login-form" class="mt-3">
+      <div class="mb-2">
+        <label class="form-label">Username</label>
+        <input type="text" id="login-username" class="form-control" autocomplete="username" required />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Password</label>
+        <input type="password" id="login-password" class="form-control" autocomplete="current-password" required />
+      </div>
+      <div id="login-error" class="text-danger small mt-2" style="display:none;"></div>
+      <button type="submit" class="btn btn-primary w-100 mt-2">
+        <i class="bi bi-box-arrow-in-right"></i> Login
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== App ===== -->
 <div id="app-shell" class="app-shell" style="display:none;">
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div>
       <div class="sidebar-brand">
-        <div class="sidebar-brand-icon">WH</div>
+        <div class="brand-icon">WH</div>
         <div>
           <div class="fw-semibold">Warehouse</div>
-          <div style="font-size: 0.75rem; color: #9ca3af">
-            Handover Dashboard
-          </div>
+          <div style="font-size:.75rem;color:#9ca3af">Handover Dashboard</div>
         </div>
       </div>
+
       <nav class="sidebar-nav">
-        <a href="#" class="nav-link active" data-view="dashboard">
-          <i class="bi bi-grid"></i>
-          <span>Dashboard</span>
-        </a>
-        <a href="#" class="nav-link" data-view="handovers">
-          <i class="bi bi-box-seam"></i>
-          <span>Handovers</span>
-        </a>
-        <a href="#" class="nav-link" data-view="deleted-handovers">
-          <i class="bi bi-trash3"></i>
-          <span>Deleted Handovers</span>
-        </a>
-        <a href="#" class="nav-link" data-view="warehouses">
-          <i class="bi bi-buildings"></i>
-          <span>Warehouses</span>
-        </a>
-        <a href="#" class="nav-link" data-view="admin-users">
-          <i class="bi bi-people"></i>
-          <span>Users (Admin)</span>
-        </a>
-        <a href="#" class="nav-link" data-view="reports">
-          <i class="bi bi-bar-chart-line"></i>
-          <span>Reports</span>
-        </a>
+        <a href="#" class="nav-link active" data-view="dashboard"><i class="bi bi-grid"></i><span>Dashboard</span></a>
+        <a href="#" class="nav-link" data-view="handovers"><i class="bi bi-box-seam"></i><span>Handovers</span></a>
+        <a href="#" class="nav-link" data-view="deleted-handovers"><i class="bi bi-trash3"></i><span>Deleted</span></a>
+        <a href="#" class="nav-link" data-view="employees"><i class="bi bi-buildings"></i><span>Employees</span></a>
+        <a href="#" class="nav-link" data-view="admin-users"><i class="bi bi-people"></i><span>Accounts (Admin)</span></a>
+        <a href="#" class="nav-link" data-view="reports"><i class="bi bi-bar-chart-line"></i><span>Reports</span></a>
       </nav>
     </div>
+
     <div class="sidebar-footer">
       <div class="mb-2 small" id="current-user-label"></div>
 
@@ -317,31 +190,30 @@
         <i class="bi bi-box-arrow-right"></i> Logout
       </button>
 
-      <!-- ✅ زر مسح كل البيانات (Admin only) -->
-      <button class="btn btn-sm btn-outline-danger w-100 mb-2" id="btn-wipe-all" title="Admin only - wipe all local data">
-        <i class="bi bi-exclamation-octagon"></i> Wipe All Data (Admin)
+      <button class="btn btn-sm btn-outline-danger w-100 mb-2" id="btn-wipe-all" title="Admin only">
+        <i class="bi bi-exclamation-octagon"></i> Wipe All (Admin)
       </button>
 
-      <div style="font-size:0.75rem;color:#9fb3ff;">v1.5 – Wipe All (Admin)</div>
+      <div style="font-size:.75rem;">v2.0 – Clean Start (No Defaults)</div>
     </div>
   </aside>
 
-  <!-- Main Panel -->
   <main class="main-panel">
-    <!-- DASHBOARD VIEW -->
+
+    <!-- DASHBOARD -->
     <section class="view-section" data-view="dashboard">
       <div class="top-bar">
         <div>
-          <div class="top-bar-title">Warehouse Handover Overview</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Track and manage handovers between warehouses in real time.
-          </div>
+          <div class="top-title">Warehouse Handover Overview</div>
+          <div style="font-size:.9rem;color:var(--muted)">Track and manage handovers in a clean workflow.</div>
         </div>
+
         <div class="d-flex align-items-center gap-2">
           <div class="d-flex align-items-center gap-1">
-            <span style="font-size:0.8rem;color:#6b7280;">User:</span>
-            <select id="active-account-select" class="form-select form-select-sm" style="width: 180px;"></select>
+            <span style="font-size:.8rem;color:var(--muted)">User:</span>
+            <span class="badge bg-light text-dark" id="top-user-badge">—</span>
           </div>
+
           <button class="btn btn-sm btn-primary" id="btn-add-handover">
             <i class="bi bi-plus-lg"></i> New Handover
           </button>
@@ -354,55 +226,44 @@
       <section class="cards-grid">
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span class="stat-label">Total Handovers</span>
-            <i class="bi bi-arrows-move"></i>
+            <span class="stat-label">Visible Handovers</span><i class="bi bi-arrows-move"></i>
           </div>
           <div class="stat-value" id="stat-total">0</div>
-          <div class="stat-trend text-success" id="stat-total-note">Updated automatically</div>
         </div>
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span class="stat-label">Pending</span>
-            <i class="bi bi-hourglass-split"></i>
+            <span class="stat-label">Pending</span><i class="bi bi-hourglass-split"></i>
           </div>
           <div class="stat-value" id="stat-pending">0</div>
-          <div class="stat-trend text-warning" id="stat-pending-note">Items awaiting confirmation</div>
         </div>
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span class="stat-label">Completed</span>
-            <i class="bi bi-check2-circle"></i>
+            <span class="stat-label">Completed</span><i class="bi bi-check2-circle"></i>
           </div>
           <div class="stat-value text-success" id="stat-completed">0</div>
-          <div class="stat-trend text-success-emphasis" id="stat-completed-note">Successfully handed over</div>
         </div>
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span class="stat-label">Delayed</span>
-            <i class="bi bi-exclamation-triangle"></i>
+            <span class="stat-label">Delayed</span><i class="bi bi-exclamation-triangle"></i>
           </div>
           <div class="stat-value text-danger" id="stat-delayed">0</div>
-          <div class="stat-trend text-danger-emphasis" id="stat-delayed-note">Check issues and follow-up</div>
         </div>
       </section>
 
-      <section class="filters-card mt-2">
+      <section class="panel-card mt-2">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="mb-0">Filters</h6>
-          <button class="btn btn-sm btn-link p-0" id="btn-reset-filters">Reset filters</button>
+          <button class="btn btn-sm btn-link p-0" id="btn-reset-filters">Reset</button>
         </div>
+
         <div class="filters-grid">
           <div>
-            <label class="form-label form-label-sm">From (Employee)</label>
-            <select id="filter-from" class="form-select form-select-sm">
-              <option value="">All</option>
-            </select>
+            <label class="form-label form-label-sm">From</label>
+            <select id="filter-from" class="form-select form-select-sm"><option value="">All</option></select>
           </div>
           <div>
-            <label class="form-label form-label-sm">To (Employee)</label>
-            <select id="filter-to" class="form-select form-select-sm">
-              <option value="">All</option>
-            </select>
+            <label class="form-label form-label-sm">To</label>
+            <select id="filter-to" class="form-select form-select-sm"><option value="">All</option></select>
           </div>
           <div>
             <label class="form-label form-label-sm">Status</label>
@@ -434,76 +295,51 @@
           </div>
           <div>
             <label class="form-label form-label-sm">Search</label>
-            <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="Search by ID or item..."/>
+            <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="ID / item / from / to"/>
           </div>
         </div>
       </section>
 
-      <div class="row mt-2 g-3">
-        <div class="col-12">
-          <section class="table-card table-card--resizable">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0">Handover List</h6>
-              <span id="table-count" style="font-size: 0.8rem; color: #6b7280"></span>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead>
-                <tr>
-                  <th>HNDR ID</th>
-                  <th>FROM</th>
-                  <th>TO</th>
-                  <th>ITEMS</th>
-                  <th>PRIORITY</th>
-                  <th>STATUS</th>
-                  <th>DATE</th>
-                  <th>ACTION BY</th>
-                  <th>ATTACHMENT</th>
-                  <th style="width: 120px;">ACTIONS</th>
-                </tr>
-                </thead>
-                <tbody id="handover-tbody"></tbody>
-              </table>
-            </div>
-          </section>
+      <section class="panel-card table-card--resizable mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Handover List</h6>
+          <span id="table-count" style="font-size:.85rem;color:var(--muted)"></span>
         </div>
-      </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>ID</th><th>FROM</th><th>TO</th><th>ITEMS</th><th>PRIORITY</th><th>STATUS</th><th>DATE</th><th>ACTION BY</th><th>ATT</th><th style="width:130px">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="handover-tbody"></tbody>
+          </table>
+        </div>
+      </section>
     </section>
 
-    <!-- HANDOVERS VIEW -->
+    <!-- HANDOVERS (Completed) -->
     <section class="view-section d-none" data-view="handovers">
-      <div class="top-bar mb-3">
+      <div class="top-bar mb-2">
         <div>
-          <div class="top-bar-title">Completed Handovers</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            All handovers that are currently marked as Completed.
-          </div>
+          <div class="top-title">Completed Handovers</div>
+          <div style="font-size:.9rem;color:var(--muted)">Only completed records within your visibility.</div>
         </div>
-        <button class="btn btn-sm btn-primary" id="btn-add-handover-2">
-          <i class="bi bi-plus-lg"></i> New Handover
-        </button>
+        <button class="btn btn-sm btn-primary" id="btn-add-handover-2"><i class="bi bi-plus-lg"></i> New</button>
       </div>
 
-      <div class="table-card">
+      <div class="panel-card">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Completed Handovers</h6>
-          <span id="completed-count" style="font-size: 0.8rem; color: #6b7280"></span>
+          <h6 class="mb-0">Completed</h6>
+          <span id="completed-count" style="font-size:.85rem;color:var(--muted)"></span>
         </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-            <tr>
-              <th>HNDR ID</th>
-              <th>FROM</th>
-              <th>TO</th>
-              <th>ITEMS</th>
-              <th>PRIORITY</th>
-              <th>STATUS</th>
-              <th>DATE</th>
-              <th>ACTION BY</th>
-              <th>ATTACHMENT</th>
-              <th style="width: 120px;">ACTIONS</th>
-            </tr>
+              <tr>
+                <th>ID</th><th>FROM</th><th>TO</th><th>ITEMS</th><th>PRIORITY</th><th>STATUS</th><th>DATE</th><th>ACTION BY</th><th>ATT</th><th style="width:130px">ACTIONS</th>
+              </tr>
             </thead>
             <tbody id="completed-tbody"></tbody>
           </table>
@@ -511,363 +347,302 @@
       </div>
     </section>
 
-    <!-- DELETED HANDOVERS VIEW -->
+    <!-- DELETED -->
     <section class="view-section d-none" data-view="deleted-handovers">
-      <div class="top-bar mb-3">
+      <div class="top-bar mb-2">
         <div>
-          <div class="top-bar-title">Deleted Handovers</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Handovers deleted by Admin. You can restore them back to the main list.
-          </div>
+          <div class="top-title">Deleted Handovers</div>
+          <div style="font-size:.9rem;color:var(--muted)">Admin can restore deleted items.</div>
         </div>
       </div>
 
-      <div class="table-card">
+      <div class="panel-card">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Deleted Handovers</h6>
-          <span id="deleted-count" style="font-size: 0.8rem; color: #6b7280"></span>
+          <h6 class="mb-0">Deleted</h6>
+          <span id="deleted-count" style="font-size:.85rem;color:var(--muted)"></span>
         </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-            <tr>
-              <th>HNDR ID</th>
-              <th>FROM</th>
-              <th>TO</th>
-              <th>ITEMS</th>
-              <th>PRIORITY</th>
-              <th>STATUS</th>
-              <th>DATE</th>
-              <th>ACTION BY</th>
-              <th>ATTACHMENT</th>
-              <th style="width: 90px;">ACTIONS</th>
-            </tr>
+              <tr>
+                <th>ID</th><th>FROM</th><th>TO</th><th>ITEMS</th><th>PRIORITY</th><th>STATUS</th><th>DATE</th><th>ACTION BY</th><th>ATT</th><th style="width:100px">ACTIONS</th>
+              </tr>
             </thead>
-            <tbody id="deleted-handover-tbody"></tbody>
+            <tbody id="deleted-tbody"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- WAREHOUSES VIEW -->
-    <section class="view-section d-none" data-view="warehouses">
-      <div class="top-bar mb-3">
+    <!-- EMPLOYEES -->
+    <section class="view-section d-none" data-view="employees">
+      <div class="top-bar mb-2">
         <div>
-          <div class="top-bar-title">Warehouses</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Manage and review all warehouses.
-          </div>
+          <div class="top-title">Employees</div>
+          <div style="font-size:.9rem;color:var(--muted)">Add/edit employees used in From/To/Action By.</div>
         </div>
       </div>
 
-      <div class="table-card mb-3">
-        <h6>Warehouses List</h6>
-        <p class="text-muted mb-0">
-          Here you can later add a table for warehouses (name, location, capacity, status, etc.).
-        </p>
-      </div>
-
-      <div class="table-card">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Users / Employees</h6>
-        </div>
-        <form id="user-form" class="row g-2 mb-3">
+      <div class="panel-card">
+        <form id="employee-form" class="row g-2">
           <div class="col-md-4">
-            <input type="text" id="user-name" class="form-control" placeholder="Employee name" required />
+            <label class="form-label form-label-sm">Name</label>
+            <input id="emp-name" class="form-control" required/>
           </div>
           <div class="col-md-3">
-            <input type="text" id="user-role" class="form-control" placeholder="Role (e.g. Manager)" />
+            <label class="form-label form-label-sm">Role/Title</label>
+            <input id="emp-role" class="form-control" placeholder="Manager / Supervisor"/>
           </div>
           <div class="col-md-3">
-            <input type="email" id="user-email" class="form-control" placeholder="Email address" />
+            <label class="form-label form-label-sm">Email</label>
+            <input id="emp-email" type="email" class="form-control" placeholder="name@company.com"/>
           </div>
-          <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary">Add User</button>
+          <div class="col-md-2 d-grid align-self-end">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Add</button>
           </div>
         </form>
+
+        <hr/>
+
         <div class="table-responsive">
           <table class="table table-sm align-middle">
-            <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Email</th>
-              <th style="width: 70px;">Actions</th>
-            </tr>
-            </thead>
-            <tbody id="users-tbody"></tbody>
+            <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Email</th><th style="width:90px">Actions</th></tr></thead>
+            <tbody id="employees-tbody"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- ADMIN USERS VIEW -->
+    <!-- ACCOUNTS (ADMIN) -->
     <section class="view-section d-none" data-view="admin-users">
-      <div class="top-bar mb-3">
+      <div class="top-bar mb-2">
         <div>
-          <div class="top-bar-title">Users (Admin)</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Manage application accounts (username, role, and link to employees).
-            Passwords are local to this browser only.
-          </div>
+          <div class="top-title">Accounts (Admin)</div>
+          <div style="font-size:.9rem;color:var(--muted)">Create accounts & link them to employees. Admin only.</div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" id="btn-export-json"><i class="bi bi-download"></i> Export JSON</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-import-json"><i class="bi bi-upload"></i> Import JSON</button>
+          <input type="file" id="import-json-input" accept="application/json" hidden />
+          <button class="btn btn-sm btn-primary" id="btn-add-account"><i class="bi bi-plus-lg"></i> Add Account</button>
         </div>
       </div>
 
-      <div class="table-card">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">User Accounts</h6>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-warning" id="btn-resequence-ids" title="Resequence all HNDR IDs from 0001 by date">
-              <i class="bi bi-arrow-clockwise"></i> Resequence HNDR IDs
-            </button>
-            <button class="btn btn-sm btn-primary" id="btn-add-account">
-              <i class="bi bi-plus-lg"></i> Add Account
-            </button>
-          </div>
-        </div>
+      <div class="panel-card">
         <div class="table-responsive">
           <table class="table table-sm align-middle">
-            <thead>
-            <tr>
-              <th>#</th>
-              <th>Username</th>
-              <th>Employee</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th style="width: 100px;">Actions</th>
-            </tr>
-            </thead>
+            <thead><tr><th>#</th><th>Username</th><th>Employee</th><th>Role</th><th>Status</th><th style="width:110px">Actions</th></tr></thead>
             <tbody id="accounts-tbody"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- REPORTS VIEW -->
+    <!-- REPORTS -->
     <section class="view-section d-none" data-view="reports">
-      <div class="top-bar mb-3">
+      <div class="top-bar mb-2">
         <div>
-          <div class="top-bar-title">Reports & Analytics</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Summary reports and KPI analytics for your handovers.
-          </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-secondary" id="btn-import-json">
-            <i class="bi bi-upload"></i> Import JSON (Admin)
-          </button>
-
-          <button class="btn btn-sm btn-outline-secondary" id="btn-export-json">
-            <i class="bi bi-download"></i> Export JSON (Admin)
-          </button>
-
-          <input type="file" id="import-json-input" accept="application/json" hidden />
-        </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Total Handovers</span>
-            <div class="stat-value" id="rep-total">0</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Completed</span>
-            <div class="stat-value text-success" id="rep-completed">0</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Pending</span>
-            <div class="stat-value text-warning" id="rep-pending">0</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Delayed</span>
-            <div class="stat-value text-danger" id="rep-delayed">0</div>
-          </div>
+          <div class="top-title">Reports</div>
+          <div style="font-size:.9rem;color:var(--muted)">Analytics based on visible handovers.</div>
         </div>
       </div>
 
       <div class="row g-3">
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="rep-total">0</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" id="rep-pending">0</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value text-success" id="rep-completed">0</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Delayed</div><div class="stat-value text-danger" id="rep-delayed">0</div></div></div>
+      </div>
+
+      <div class="row g-3 mt-1">
         <div class="col-lg-6">
-          <div class="chart-card">
-            <h6>By Status (Visible Handovers)</h6>
-            <p class="text-muted mb-2">For Admin/Supervisor: all handovers. For others: only own / assigned handovers.</p>
-            <canvas id="reports-status-chart" height="220"></canvas>
+          <div class="panel-card">
+            <h6>By Status</h6>
+            <canvas id="chart-status" height="220"></canvas>
           </div>
         </div>
         <div class="col-lg-6">
-          <div class="chart-card">
-            <h6>Handovers by User</h6>
-            <p class="text-muted mb-2">Number of handovers per Action By (within visibility rules).</p>
-            <canvas id="reports-user-chart" height="220"></canvas>
+          <div class="panel-card">
+            <h6>By Action By</h6>
+            <canvas id="chart-user" height="220"></canvas>
           </div>
         </div>
       </div>
     </section>
+
   </main>
 </div>
 
-<!-- Modal: New/Edit Handover -->
+<!-- ===== Modals ===== -->
+
+<!-- Handover Modal -->
 <div class="modal fade" id="handover-modal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form id="handover-form">
         <div class="modal-header">
           <h5 class="modal-title" id="handover-modal-title">New Handover</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
+
         <div class="modal-body">
           <div class="mb-2">
             <label class="form-label">Handover ID</label>
-            <input type="text" class="form-control" id="handover-id" readonly/>
+            <input id="handover-id" class="form-control" readonly />
           </div>
+
           <div class="mb-2">
             <label class="form-label">From (Employee)</label>
-            <select class="form-select" id="handover-from" required></select>
+            <select id="handover-from" class="form-select" required></select>
+            <div class="form-text">Auto-filled from logged-in user.</div>
           </div>
+
           <div class="mb-2">
             <label class="form-label">To (Employee)</label>
-            <select class="form-select" id="handover-to" required></select>
+            <select id="handover-to" class="form-select" required></select>
           </div>
+
           <div class="mb-2">
-            <label class="form-label">Items Description</label>
-            <input type="text" class="form-control" id="handover-items" placeholder="e.g. 150 cartons of product X" required/>
+            <label class="form-label">Items</label>
+            <input id="handover-items" class="form-control" required placeholder="e.g. 150 cartons of Product X"/>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Long Description</label>
-            <textarea class="form-control" id="handover-long-desc" rows="3"
-              placeholder="Optional detailed notes about this handover (reason, transport, additional comments)"></textarea>
+            <textarea id="handover-long" class="form-control" rows="3" placeholder="Optional notes..."></textarea>
           </div>
+
           <div class="mb-2">
-            <label class="form-label">Priority Level</label>
-            <select class="form-select" id="handover-priority" required>
+            <label class="form-label">Priority</label>
+            <select id="handover-priority" class="form-select" required>
               <option value="P1">P1 - High</option>
               <option value="P2">P2 - Moderate</option>
               <option value="P3">P3 - Low</option>
               <option value="P4">P4 - Negligible</option>
             </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Status</label>
-            <select class="form-select" id="handover-status" required>
+            <select id="handover-status" class="form-select" required>
               <option>Pending</option>
               <option>In Progress</option>
               <option>Completed</option>
               <option>Delayed</option>
             </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Date</label>
-            <input type="date" class="form-control" id="handover-date" required/>
+            <input id="handover-date" type="date" class="form-control" required />
           </div>
+
           <div class="mb-2">
             <label class="form-label">Action By</label>
-            <select class="form-select" id="handover-action-by" required></select>
+            <select id="handover-actionby" class="form-select" required></select>
+            <div class="form-text">Auto-filled from logged-in user.</div>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Attachment (optional)</label>
-            <div id="current-attachment-info" class="small text-muted mb-1">No attachment</div>
-            <input type="file" class="form-control" id="handover-attachment" />
-            <div class="form-text">
-              You can attach any file (image, PDF, Word, Excel, email export, etc.).  
-              Note: very large files may not be saved due to browser storage limits.
-            </div>
+            <div id="attachment-info" class="small text-muted mb-1">No attachment</div>
+            <input id="handover-attachment" type="file" class="form-control"/>
+            <div class="form-text">Stored as DataURL (browser storage). Keep files small.</div>
           </div>
         </div>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="handover-save-btn">Save</button>
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" id="handover-save-btn" type="submit">Save</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Modal: Edit User (employee) -->
-<div class="modal fade" id="user-modal" tabindex="-1" aria-hidden="true">
+<!-- Employee edit Modal -->
+<div class="modal fade" id="employee-modal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <form id="user-edit-form">
+      <form id="employee-edit-form">
         <div class="modal-header">
-          <h5 class="modal-title">Edit User</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Edit Employee</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-2">
             <label class="form-label">Name</label>
-            <input type="text" id="edit-user-name" class="form-control" required />
+            <input id="emp-edit-name" class="form-control" required />
           </div>
           <div class="mb-2">
-            <label class="form-label">Role</label>
-            <input type="text" id="edit-user-role" class="form-control" />
+            <label class="form-label">Role/Title</label>
+            <input id="emp-edit-role" class="form-control" />
           </div>
           <div class="mb-2">
             <label class="form-label">Email</label>
-            <input type="email" id="edit-user-email" class="form-control" />
+            <input id="emp-edit-email" type="email" class="form-control" />
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save changes</button>
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Modal: Admin User Account -->
+<!-- Account Modal -->
 <div class="modal fade" id="account-modal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form id="account-form">
         <div class="modal-header">
-          <h5 class="modal-title">User Account</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
+
         <div class="modal-body">
           <div class="mb-2">
             <label class="form-label">Username</label>
-            <input type="text" id="account-username" class="form-control" required />
+            <input id="acc-username" class="form-control" required />
           </div>
+
           <div class="mb-2">
-            <label class="form-label">Linked Employee (optional)</label>
-            <select id="account-employee" class="form-select"></select>
+            <label class="form-label">Linked Employee</label>
+            <select id="acc-employee" class="form-select">
+              <option value="">(No linked employee)</option>
+            </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Role</label>
-            <select id="account-role" class="form-select">
+            <select id="acc-role" class="form-select">
               <option>Admin</option>
               <option>Supervisor</option>
               <option>User</option>
               <option>Viewer</option>
             </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Status</label>
-            <select id="account-status" class="form-select">
+            <select id="acc-status" class="form-select">
               <option value="Active">Active</option>
               <option value="Disabled">Disabled</option>
             </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Password (Admin only)</label>
-            <input type="password" id="account-password" class="form-control" placeholder="Leave blank to keep current password"/>
-            <div class="form-text">Only Admin can set or change passwords for user accounts.</div>
-          </div>
-          <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
-            Passwords are stored only in this browser (prototype).  
-            Exported JSON does not include passwords for safety.
+            <input id="acc-password" type="password" class="form-control" placeholder="Leave blank to keep current"/>
+            <div class="form-text">Passwords are stored locally in this browser (prototype).</div>
           </div>
         </div>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save account</button>
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save</button>
         </div>
       </form>
     </div>
@@ -878,648 +653,508 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
-  const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
+(() => {
+  // ===== Constants / Storage Keys =====
+  const STORE = {
+    employees: "wh.employees.v2",
+    accounts:  "wh.accounts.v2",
+    handovers: "wh.handovers.v2",
+    deleted:   "wh.deleted.v2",
+    session:   "wh.session.v2",
+    idSerial:  "wh.idserial.v2"
+  };
 
-  // ===== Helpers (IMPORTANT FIX) =====
-  function byId(id) { return document.getElementById(id); }
-  function onId(id, event, handler) {
-    const el = byId(id);
-    if (!el) return false;
-    el.addEventListener(event, handler);
-    return true;
-  }
+  const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024;
 
-  function loadIdCounter() {
-    try {
-      const stored = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
-      const num = parseInt(stored, 10);
-      return isNaN(num) ? 0 : num;
-    } catch (e) {
-      return 0;
-    }
-  }
+  // ===== DOM Helpers =====
+  const byId = (id) => document.getElementById(id);
+  const onId = (id, evt, fn) => { const el = byId(id); if (!el) return false; el.addEventListener(evt, fn); return true; };
+  const nowDateISO = () => new Date().toISOString().slice(0,10);
 
-  function saveIdCounter(last) {
-    try { localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0)); } catch (e) {}
-  }
-
-  function normalizeIdsForList(list, lastSerial) {
-    if (!Array.isArray(list) || list.length === 0) return lastSerial;
-    let counter = typeof lastSerial === "number" ? lastSerial : 0;
-
-    list.forEach(h => {
-      if (!h) return;
-      let yy, mm;
-      const dateStr = h.date || "";
-      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
-      if (m) {
-        yy = m[1].slice(-2);
-        mm = m[2];
-      } else {
-        const today = new Date();
-        yy = String(today.getFullYear()).slice(-2);
-        mm = String(today.getMonth() + 1).padStart(2, "0");
-      }
-      counter += 1;
-      const serial = String(counter).padStart(4, "0");
-      h.id = `HNDR-${yy}-${mm}-${serial}`;
-    });
-
-    return counter;
-  }
-
-  function resequenceAllHandoverIdsFromOne() {
-    const all = [...handovers, ...deletedHandovers];
-    if (all.length === 0) {
-      saveIdCounter(0);
-      return;
-    }
-
-    all.sort((a, b) => {
-      const da = a.date || "";
-      const db = b.date || "";
-      if (da && db && da !== db) return da.localeCompare(db);
-      return (a.id || "").localeCompare(b.id || "");
-    });
-
-    let lastSerial = 0;
-    lastSerial = normalizeIdsForList(all, lastSerial);
-    saveIdCounter(lastSerial);
-  }
-
-  const defaultUsers = [
-    { name: "Sameer Jabbar",       role: "Manager",    email: "sameer_jabbar@yahoo.com" },
-    { name: "Ardasher A. Ahmad",   role: "Supervisor", email: "" },
-  ];
-
-  const defaultHandovers = [
-    {
-      id: "HNDR-25-09-0001",
-      from: "Sameer Jabbar",
-      to: "Ardasher A. Ahmad",
-      items: "120 cartons of Product A",
-      longDescription: "",
-      priority: "P1",
-      status: "Pending",
-      date: "2025-09-20",
-      actionBy: "Sameer Jabbar",
-      attachmentName: null,
-      attachmentType: null,
-      attachmentSize: null,
-      attachmentDataUrl: null,
-    },
-    {
-      id: "HNDR-25-09-0002",
-      from: "Ardasher A. Ahmad",
-      to: "Sameer Jabbar",
-      items: "80 pallets of Product B",
-      longDescription: "",
-      priority: "P2",
-      status: "In Progress",
-      date: "2025-09-21",
-      actionBy: "Ardasher A. Ahmad",
-      attachmentName: null,
-      attachmentType: null,
-      attachmentSize: null,
-      attachmentDataUrl: null,
-    },
-  ];
-
-  const defaultAccounts = [
-    {
-      username: "Admin",
-      employeeName: "Sameer Jabbar",
-      role: "Admin",
-      status: "Active",
-      password: "1234",
-    },
-  ];
-
+  // ===== In-memory State =====
+  let employees = [];
+  let accounts  = [];
   let handovers = [];
-  let filteredHandovers = [];
-  let deletedHandovers = [];
-  let users = [];
-  let accounts = [];
+  let deleted   = [];
 
-  let reportsStatusChart = null;
-  let reportsUserChart = null;
+  let filtered  = [];
+  let charts = { status: null, user: null };
 
-  let isEditMode = false;
-  let editingId = null;
-  let editingReadOnly = false;
+  // Modals
+  let modals = { handover:null, employee:null, account:null };
 
-  let editingUserIndex = null;
-  let userModal, userEditForm, editUserNameInput, editUserRoleInput, editUserEmailInput;
+  // Editing state
+  let edit = {
+    handover: { mode:false, id:null, readOnly:false },
+    employeeIndex: null,
+    account: { mode:false, index:null }
+  };
 
-  let handoverModal;
-  let handoverForm;
-  let inputId, inputFrom, inputTo, inputItems, inputLongDesc, inputPriority,
-      inputStatus, inputDate, inputActionBy,
-      attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
+  // ===== Storage =====
+  function loadJson(key, fallback){
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try { return JSON.parse(raw); } catch { return fallback; }
+  }
+  function saveJson(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-  let accountModal, accountForm;
-  let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect, accountPasswordInput;
-  let isEditAccount = false;
-  let editingAccountIndex = null;
-
-  let activeAccountUsername = null;
-
-  function loadUsers() {
-    const saved = localStorage.getItem("warehouseUsers");
-    if (saved) {
-      try { users = JSON.parse(saved); } catch { users = [...defaultUsers]; }
-    } else {
-      users = [...defaultUsers];
-    }
+  function loadAll(){
+    employees = loadJson(STORE.employees, []);
+    accounts  = loadJson(STORE.accounts,  []);
+    handovers = loadJson(STORE.handovers, []);
+    deleted   = loadJson(STORE.deleted,   []);
+  }
+  function saveAll(){
+    saveJson(STORE.employees, employees);
+    saveJson(STORE.accounts,  accounts);
+    saveJson(STORE.handovers, handovers);
+    saveJson(STORE.deleted,   deleted);
   }
 
-  function saveUsers() { localStorage.setItem("warehouseUsers", JSON.stringify(users)); }
-
-  function loadHandovers() {
-    const saved = localStorage.getItem("warehouseHandovers");
-    if (saved) {
-      try { handovers = JSON.parse(saved); } catch { handovers = [...defaultHandovers]; }
-    } else {
-      handovers = [...defaultHandovers];
-    }
-    filteredHandovers = [...handovers];
+  // ===== Session / Auth =====
+  function getSession(){ return loadJson(STORE.session, { username:"" }); }
+  function setSession(username){ saveJson(STORE.session, { username: username || "" }); }
+  function getLoggedInAccount(){
+    const u = (getSession().username || "").trim();
+    if (!u) return null;
+    return accounts.find(a => a.username === u) || null;
   }
 
-  function saveHandovers() { localStorage.setItem("warehouseHandovers", JSON.stringify(handovers)); }
-
-  function loadDeletedHandovers() {
-    const saved = localStorage.getItem("warehouseDeletedHandovers");
-    if (saved) {
-      try { deletedHandovers = JSON.parse(saved); } catch { deletedHandovers = []; }
-    } else {
-      deletedHandovers = [];
-    }
+  function validateLogin(username, password){
+    const acc = accounts.find(a => a.username === username);
+    if (!acc) return { ok:false, message:"Invalid username or password." };
+    if ((acc.status || "Active") === "Disabled") return { ok:false, message:"This account is disabled." };
+    if ((acc.password || "") !== password) return { ok:false, message:"Invalid username or password." };
+    return { ok:true, account: acc };
   }
 
-  function saveDeletedHandovers() {
-    localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers));
-  }
-
-  function normalizeAccountsPasswords() {
-    accounts.forEach(acc => {
-      if (typeof acc.password === "undefined" || acc.password === null) acc.password = "1234";
-    });
-  }
-
-  function loadAccounts() {
-    const saved = localStorage.getItem("warehouseAccounts");
-    if (saved) {
-      try { accounts = JSON.parse(saved); } catch { accounts = [...defaultAccounts]; }
-    } else {
-      accounts = [...defaultAccounts];
-    }
-    normalizeAccountsPasswords();
-  }
-
-  function saveAccounts() {
-    normalizeAccountsPasswords();
-    localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
-  }
-
-  function loadActiveAccount() {
-    activeAccountUsername = localStorage.getItem("warehouseActiveAccountUsername") || "";
-  }
-
-  function saveActiveAccount() {
-    if (activeAccountUsername) localStorage.setItem("warehouseActiveAccountUsername", activeAccountUsername);
-    else localStorage.removeItem("warehouseActiveAccountUsername");
-  }
-
-  function getLoggedInUsername() { return localStorage.getItem("warehouseLoggedInAccountUsername") || ""; }
-
-  function setLoggedInUsername(username) {
-    if (username) localStorage.setItem("warehouseLoggedInAccountUsername", username);
-    else localStorage.removeItem("warehouseLoggedInAccountUsername");
-  }
-
-  function getActiveAccount() {
-    if (!activeAccountUsername) return null;
-    return accounts.find(acc => acc.username === activeAccountUsername) || null;
-  }
-
-  function getLoggedInAccount() {
-    const username = getLoggedInUsername();
-    if (!username) return null;
-    return accounts.find(acc => acc.username === username) || null;
-  }
-
-  // ✅✅✅ IMPORTANT CHANGE:
-  // الآن المستخدم يرى الهاندوفر الخاص به إذا كان: From أو To أو Action By
-  function getVisibleHandovers() {
+  // ===== Visibility rules =====
+  function visibleHandovers(){
     const acc = getLoggedInAccount();
     if (!acc) return [];
 
     if (acc.role === "Admin" || acc.role === "Supervisor") return handovers;
 
-    const empName = (acc.employeeName || "").trim();
-    if (!empName) return [];
+    const emp = (acc.employeeName || "").trim();
+    if (!emp) return [];
 
-    return handovers.filter(h =>
-      (h.from || "").trim() === empName ||
-      (h.to || "").trim() === empName ||
-      (h.actionBy || "").trim() === empName
-    );
+    // ✅ User/Viewer يرى ما يخصه كـ ActionBy أو To
+    return handovers.filter(h => (h.actionBy||"").trim() === emp || (h.to||"").trim() === emp);
   }
 
-  function canEditHandover(h) {
+  function canEditHandover(h){
     const acc = getLoggedInAccount();
     if (!acc) return false;
     if (acc.role === "Admin" || acc.role === "Supervisor") return true;
 
-    const empName = acc.employeeName || "";
-    if (!empName) return false;
+    const emp = (acc.employeeName || "").trim();
+    if (!emp) return false;
 
-    if (acc.role === "User") return h.actionBy === empName || h.to === empName;
+    // User: يقدر يعدل ما يخصه (ActionBy) أو ما موجه له (To)
+    if (acc.role === "User") return h.actionBy === emp || h.to === emp;
+
+    // Viewer: read-only
     return false;
   }
 
-  function generateNextId() {
-    const today = new Date();
-    const year = String(today.getFullYear()).slice(-2);
-    const month = String(today.getMonth() + 1).padStart(2, "0");
+  // ===== ID Generation =====
+  function loadSerial(){
+    const n = parseInt(localStorage.getItem(STORE.idSerial) || "0", 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function saveSerial(n){ localStorage.setItem(STORE.idSerial, String(n || 0)); }
 
-    let lastSerial = loadIdCounter();
-    if (typeof lastSerial !== "number" || isNaN(lastSerial)) lastSerial = 0;
-    lastSerial += 1;
-    saveIdCounter(lastSerial);
-
-    const serial = String(lastSerial).padStart(4, "0");
-    return `HNDR-${year}-${month}-${serial}`;
+  function nextHandoverId(dateISO){
+    const d = dateISO ? new Date(dateISO) : new Date();
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    let s = loadSerial() + 1;
+    saveSerial(s);
+    return `HNDR-${yy}-${mm}-${String(s).padStart(4,"0")}`;
   }
 
-  function getStatusClass(status) {
-    switch (status) {
-      case "Pending": return "status-badge status-pending";
-      case "Completed": return "status-badge status-completed";
-      case "Delayed": return "status-badge status-delayed";
-      case "In Progress": return "status-badge status-inprogress";
-      default: return "status-badge";
+  // ===== UI: page switching =====
+  function showSetup(){
+    byId("setup-page").style.display = "flex";
+    byId("login-page").style.display = "none";
+    byId("app-shell").style.display = "none";
+  }
+  function showLogin(){
+    byId("setup-page").style.display = "none";
+    byId("login-page").style.display = "flex";
+    byId("app-shell").style.display = "none";
+  }
+  function showApp(){
+    byId("setup-page").style.display = "none";
+    byId("login-page").style.display = "none";
+    byId("app-shell").style.display = "flex";
+  }
+
+  function setActiveView(view){
+    const acc = getLoggedInAccount();
+
+    // Admin guard
+    if ((view === "admin-users" || view === "deleted-handovers") && (!acc || acc.role !== "Admin")){
+      alert("Only Admin can access this section.");
+      return;
+    }
+
+    document.querySelectorAll(".sidebar-nav .nav-link").forEach(a=>{
+      a.classList.toggle("active", a.getAttribute("data-view") === view);
+    });
+    document.querySelectorAll(".view-section").forEach(s=>{
+      s.classList.toggle("d-none", s.getAttribute("data-view") !== view);
+    });
+  }
+
+  // ===== UI: options fill =====
+  function setSelectOptions(selectEl, items, includeAll){
+    if (!selectEl) return;
+    const cur = selectEl.value;
+    selectEl.innerHTML = "";
+    if (includeAll){
+      const o = document.createElement("option");
+      o.value = "";
+      o.textContent = "All";
+      selectEl.appendChild(o);
+    }
+    items.forEach(v=>{
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = v;
+      selectEl.appendChild(o);
+    });
+    if (cur && items.includes(cur)) selectEl.value = cur;
+  }
+
+  function employeeNames(){ return employees.map(e => e.name); }
+
+  function refreshEmployeeSelects(){
+    const names = employeeNames();
+    setSelectOptions(byId("filter-from"), names, true);
+    setSelectOptions(byId("filter-to"), names, true);
+
+    setSelectOptions(byId("handover-to"), names, false);
+    setSelectOptions(byId("handover-actionby"), names, false);
+
+    // Account modal employee list
+    const accEmp = byId("acc-employee");
+    if (accEmp){
+      const cur = accEmp.value;
+      accEmp.innerHTML = `<option value="">(No linked employee)</option>`;
+      names.forEach(n=>{
+        const o = document.createElement("option");
+        o.value = n; o.textContent = n;
+        accEmp.appendChild(o);
+      });
+      if (cur && names.includes(cur)) accEmp.value = cur;
     }
   }
 
-  function renderTable() {
+  // ===== UI: top labels =====
+  function updateUserBadges(){
+    const acc = getLoggedInAccount();
+    const text = acc ? `${acc.username} (${acc.role})` : "—";
+    const emp  = acc?.employeeName ? ` • ${acc.employeeName}` : "";
+    byId("current-user-label").textContent = acc ? `Logged in as: ${text}${emp}` : "Not logged in";
+    byId("top-user-badge").textContent = acc ? `${text}${emp}` : "—";
+  }
+
+  // ===== Status Badge =====
+  function statusClass(s){
+    if (s === "Pending") return "status-badge status-pending";
+    if (s === "In Progress") return "status-badge status-inprogress";
+    if (s === "Completed") return "status-badge status-completed";
+    if (s === "Delayed") return "status-badge status-delayed";
+    return "status-badge";
+  }
+
+  // ===== Render: tables =====
+  function applyFilters(){
+    const base = visibleHandovers();
+
+    const fFrom = byId("filter-from").value || "";
+    const fTo   = byId("filter-to").value || "";
+    const fSt   = byId("filter-status").value || "";
+    const fPr   = byId("filter-priority").value || "";
+    const dFrom = byId("filter-date-from").value || "";
+    const dTo   = byId("filter-date-to").value || "";
+    const q     = (byId("filter-search").value || "").toLowerCase().trim();
+
+    filtered = base.filter(h=>{
+      if (fFrom && h.from !== fFrom) return false;
+      if (fTo   && h.to   !== fTo)   return false;
+      if (fSt   && h.status !== fSt) return false;
+      if (fPr   && h.priority !== fPr) return false;
+      if (dFrom && (h.date||"") < dFrom) return false;
+      if (dTo   && (h.date||"") > dTo) return false;
+
+      if (q){
+        const text = `${h.id} ${h.items} ${h.from} ${h.to} ${h.actionBy}`.toLowerCase();
+        if (!text.includes(q)) return false;
+      }
+      return true;
+    });
+
+    renderMainTable();
+  }
+
+  function resetFilters(){
+    ["filter-from","filter-to","filter-status","filter-priority","filter-date-from","filter-date-to","filter-search"]
+      .forEach(id => { const el = byId(id); if (el) el.value = ""; });
+    applyFilters();
+  }
+
+  function renderMainTable(){
     const tbody = byId("handover-tbody");
-    if (!tbody) return;
     tbody.innerHTML = "";
 
     const acc = getLoggedInAccount();
-    const empName = acc?.employeeName?.trim() || "";
-    const isAdmin = acc && acc.role === "Admin";
+    const isAdmin = acc?.role === "Admin";
+    const emp = (acc?.employeeName || "").trim();
 
-    filteredHandovers.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+    filtered.forEach(h=>{
       const canEdit = canEditHandover(h);
+      const linkUrl = h.attachmentDataUrl || null;
 
-      // ✅✅✅ IMPORTANT CHANGE:
-      // Assigned to you = أنت المستلم (To)
-      const isAssignedToUser = empName && (h.to || "").trim() === empName;
-
-      let actionsHtml = `
-        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
+      let actions = `
+        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="${canEdit ? "View / Edit" : "View"}">
           <i class="bi bi-eye"></i>
         </button>
       `;
-      if (canEdit) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
+      if (canEdit){
+        actions += `
+          <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark Completed">
             <i class="bi bi-check2"></i>
           </button>
         `;
       }
-      if (isAdmin) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+      if (isAdmin){
+        actions += `
+          <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${h.id}" title="Delete">
             <i class="bi bi-trash"></i>
           </button>
         `;
       }
 
+      const assignedToMe = emp && ((h.to||"") === emp || (h.actionBy||"") === emp);
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><span class="fw-semibold">${h.id}</span></td>
+        <td class="fw-semibold">${h.id}</td>
         <td>${h.from}</td>
         <td>${h.to}</td>
         <td>${h.items}</td>
         <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
+        <td><span class="${statusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date || ""}</td>
         <td>
           ${h.actionBy || ""}
-          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Assigned to you (To)">Assigned to you</span>` : ""}
+          ${assignedToMe ? `<span class="badge bg-primary-subtle text-primary ms-1">Assigned</span>` : ""}
         </td>
         <td>
           ${
             linkUrl
-              ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     ${h.attachmentName ? `download="${h.attachmentName}"` : ""}>
+              ? `<a class="btn btn-sm btn-outline-primary" href="${linkUrl}" target="_blank" ${h.attachmentName ? `download="${h.attachmentName}"` : ""}>
                    <i class="bi bi-paperclip"></i>
                  </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
+              : `<span class="text-muted" style="font-size:.85rem;">None</span>`
           }
         </td>
-        <td>${actionsHtml}</td>
+        <td>${actions}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    const tableCount = byId("table-count");
-    if (tableCount) tableCount.textContent = filteredHandovers.length + " records";
+    byId("table-count").textContent = `${filtered.length} records`;
 
-    renderCompletedTable();
     attachRowActions();
+    renderCompletedTable();
+    renderDeletedTable();
     updateStats();
     renderReports();
   }
 
-  function renderCompletedTable() {
+  function renderCompletedTable(){
     const tbody = byId("completed-tbody");
-    const countEl = byId("completed-count");
-    if (!tbody) return;
-
     tbody.innerHTML = "";
-    const base = getVisibleHandovers();
-    const completed = base.filter(h => h.status === "Completed");
+
+    const base = visibleHandovers().filter(h => h.status === "Completed");
+    byId("completed-count").textContent = `${base.length} records`;
 
     const acc = getLoggedInAccount();
-    const empName = acc?.employeeName?.trim() || "";
-    const isAdmin = acc && acc.role === "Admin";
+    const isAdmin = acc?.role === "Admin";
 
-    completed.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
+    base.forEach(h=>{
+      const linkUrl = h.attachmentDataUrl || null;
+      const canEdit = canEditHandover(h);
 
-      // ✅✅✅ IMPORTANT CHANGE:
-      const isAssignedToUser = empName && (h.to || "").trim() === empName;
-
-      let actionsHtml = `
-        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
-          <i class="bi bi-eye"></i>
-        </button>
+      let actions = `
+        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}"><i class="bi bi-eye"></i></button>
       `;
-      if (isAdmin) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
-            <i class="bi bi-trash"></i>
-          </button>
+      if (isAdmin){
+        actions += `
+          <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${h.id}"><i class="bi bi-trash"></i></button>
         `;
       }
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><span class="fw-semibold">${h.id}</span></td>
+        <td class="fw-semibold">${h.id}</td>
         <td>${h.from}</td>
         <td>${h.to}</td>
         <td>${h.items}</td>
         <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td>
-          ${h.actionBy || ""}
-          ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary ms-1" title="Assigned to you (To)">Assigned to you</span>` : ""}
-        </td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     ${h.attachmentName ? `download="${h.attachmentName}"` : ""}>
-                   <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    if (countEl) countEl.textContent = completed.length + " records";
-  }
-
-  function renderDeletedHandovers() {
-    const tbody = byId("deleted-handover-tbody");
-    const countEl = byId("deleted-count");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-    const acc = getLoggedInAccount();
-    const isAdmin = acc && acc.role === "Admin";
-
-    deletedHandovers.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-      let actionsHtml = "";
-      if (isAdmin) {
-        actionsHtml = `
-          <button class="btn btn-sm btn-outline-success btn-restore-handover" data-id="${h.id}" title="Restore">
-            <i class="bi bi-arrow-counterclockwise"></i>
-          </button>
-        `;
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
+        <td><span class="${statusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date || ""}</td>
         <td>${h.actionBy || ""}</td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     ${h.attachmentName ? `download="${h.attachmentName}"` : ""}>
-                   <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
+        <td>${linkUrl ? `<a class="btn btn-sm btn-outline-primary" href="${linkUrl}" target="_blank"><i class="bi bi-paperclip"></i></a>` : `<span class="text-muted" style="font-size:.85rem;">None</span>`}</td>
+        <td>${actions}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderDeletedTable(){
+    const tbody = byId("deleted-tbody");
+    tbody.innerHTML = "";
+
+    byId("deleted-count").textContent = `${deleted.length} records`;
+
+    const acc = getLoggedInAccount();
+    const isAdmin = acc?.role === "Admin";
+
+    deleted.forEach(h=>{
+      const linkUrl = h.attachmentDataUrl || null;
+
+      const actions = isAdmin ? `
+        <button class="btn btn-sm btn-outline-success btn-restore" data-id="${h.id}" title="Restore">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+      ` : "";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="fw-semibold">${h.id}</td>
+        <td>${h.from}</td>
+        <td>${h.to}</td>
+        <td>${h.items}</td>
+        <td>${h.priority || "-"}</td>
+        <td><span class="${statusClass(h.status)}">${h.status}</span></td>
+        <td>${h.date || ""}</td>
+        <td>${h.actionBy || ""}</td>
+        <td>${linkUrl ? `<a class="btn btn-sm btn-outline-primary" href="${linkUrl}" target="_blank"><i class="bi bi-paperclip"></i></a>` : `<span class="text-muted" style="font-size:.85rem;">None</span>`}</td>
+        <td>${actions}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    if (countEl) countEl.textContent = deletedHandovers.length + " records";
-    attachDeletedRowActions();
-  }
-
-  function attachRowActions() {
-    document.querySelectorAll(".btn-view").forEach(btn => {
-      btn.addEventListener("click", () => openEditHandover(btn.getAttribute("data-id")));
-    });
-
-    document.querySelectorAll(".btn-complete").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        const h = handovers.find(x => x.id === id);
-        if (!h) return;
-        if (!canEditHandover(h)) { alert("You are not allowed to update this handover."); return; }
-        h.status = "Completed";
-        saveHandovers();
-        applyFilters();
-      });
-    });
-
-    document.querySelectorAll(".btn-delete-handover").forEach(btn => {
-      btn.addEventListener("click", () => {
+    document.querySelectorAll(".btn-restore").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
         const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") { alert("Only Admin can delete handovers."); return; }
-
+        if (!acc || acc.role !== "Admin") return alert("Admin only.");
         const id = btn.getAttribute("data-id");
-        const h = handovers.find(x => x.id === id);
-        if (!h) return;
-
-        const ok = confirm(`Are you sure you want to delete handover "${h.id}"?`);
+        const idx = deleted.findIndex(x => x.id === id);
+        if (idx < 0) return;
+        const ok = confirm(`Restore "${id}" ?`);
         if (!ok) return;
-
-        handovers = handovers.filter(x => x.id !== id);
-        deletedHandovers.push(h);
-
-        saveHandovers();
-        saveDeletedHandovers();
-
-        applyFilters();
-        renderDeletedHandovers();
-      });
-    });
-  }
-
-  function attachDeletedRowActions() {
-    document.querySelectorAll(".btn-restore-handover").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") { alert("Only Admin can restore handovers."); return; }
-
-        const id = btn.getAttribute("data-id");
-        const idx = deletedHandovers.findIndex(h => h.id === id);
-        if (idx === -1) return;
-
-        const h = deletedHandovers[idx];
-        const ok = confirm(`Restore handover "${h.id}" back to main list?`);
-        if (!ok) return;
-
-        deletedHandovers.splice(idx, 1);
+        const h = deleted.splice(idx,1)[0];
         handovers.push(h);
-
-        saveHandovers();
-        saveDeletedHandovers();
-
-        filteredHandovers = getVisibleHandovers();
+        saveAll();
         applyFilters();
-        renderDeletedHandovers();
       });
     });
   }
 
-  function applyFilters() {
-    const from = byId("filter-from")?.value || "";
-    const to = byId("filter-to")?.value || "";
-    const status = byId("filter-status")?.value || "";
-    const priority = byId("filter-priority")?.value || "";
-    const dateFrom = byId("filter-date-from")?.value || "";
-    const dateTo = byId("filter-date-to")?.value || "";
-    const search = (byId("filter-search")?.value || "").toLowerCase();
-
-    const base = getVisibleHandovers();
-
-    filteredHandovers = base.filter(h => {
-      let ok = true;
-
-      if (from && h.from !== from) ok = false;
-      if (to && h.to !== to) ok = false;
-      if (status && h.status !== status) ok = false;
-      if (priority && h.priority !== priority) ok = false;
-
-      if (dateFrom && h.date < dateFrom) ok = false;
-      if (dateTo && h.date > dateTo) ok = false;
-
-      if (search) {
-        const text = (h.id + " " + h.items + " " + h.from + " " + h.to).toLowerCase();
-        if (!text.includes(search)) ok = false;
-      }
-      return ok;
+  function attachRowActions(){
+    document.querySelectorAll(".btn-view").forEach(btn=>{
+      btn.addEventListener("click", ()=> openHandover(btn.getAttribute("data-id")));
     });
 
-    renderTable();
+    document.querySelectorAll(".btn-complete").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.getAttribute("data-id");
+        const h = handovers.find(x => x.id === id);
+        if (!h) return;
+        if (!canEditHandover(h)) return alert("Not allowed.");
+        h.status = "Completed";
+        saveAll();
+        applyFilters();
+      });
+    });
+
+    document.querySelectorAll(".btn-delete").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const acc = getLoggedInAccount();
+        if (!acc || acc.role !== "Admin") return alert("Admin only.");
+        const id = btn.getAttribute("data-id");
+        const idx = handovers.findIndex(x => x.id === id);
+        if (idx < 0) return;
+        const ok = confirm(`Delete "${id}" ?`);
+        if (!ok) return;
+        const h = handovers.splice(idx,1)[0];
+        deleted.push(h);
+        saveAll();
+        applyFilters();
+      });
+    });
   }
 
-  function resetFilters() {
-    if (byId("filter-from")) byId("filter-from").value = "";
-    if (byId("filter-to")) byId("filter-to").value = "";
-    if (byId("filter-status")) byId("filter-status").value = "";
-    if (byId("filter-priority")) byId("filter-priority").value = "";
-    if (byId("filter-date-from")) byId("filter-date-from").value = "";
-    if (byId("filter-date-to")) byId("filter-date-to").value = "";
-    if (byId("filter-search")) byId("filter-search").value = "";
-    filteredHandovers = getVisibleHandovers();
-    renderTable();
+  // ===== Stats / Reports =====
+  function updateStats(){
+    const total = filtered.length;
+    const pending = filtered.filter(h=>h.status==="Pending").length;
+    const completed = filtered.filter(h=>h.status==="Completed").length;
+    const delayed = filtered.filter(h=>h.status==="Delayed").length;
+
+    byId("stat-total").textContent = total;
+    byId("stat-pending").textContent = pending;
+    byId("stat-completed").textContent = completed;
+    byId("stat-delayed").textContent = delayed;
   }
 
-  function updateStats() {
-    const total = filteredHandovers.length;
-    const pending = filteredHandovers.filter(h => h.status === "Pending").length;
-    const completed = filteredHandovers.filter(h => h.status === "Completed").length;
-    const delayed = filteredHandovers.filter(h => h.status === "Delayed").length;
-
-    if (byId("stat-total")) byId("stat-total").textContent = total;
-    if (byId("stat-pending")) byId("stat-pending").textContent = pending;
-    if (byId("stat-completed")) byId("stat-completed").textContent = completed;
-    if (byId("stat-delayed")) byId("stat-delayed").textContent = delayed;
-  }
-
-  function renderReports() {
-    const base = getVisibleHandovers();
-    const repTotal = byId("rep-total");
-    if (!repTotal) return;
-
+  function renderReports(){
+    const base = visibleHandovers();
     const total = base.length;
-    const pending = base.filter(h => h.status === "Pending").length;
-    const completed = base.filter(h => h.status === "Completed").length;
-    const delayed = base.filter(h => h.status === "Delayed").length;
-    const inProgress = base.filter(h => h.status === "In Progress").length;
+    const pending = base.filter(h=>h.status==="Pending").length;
+    const completed = base.filter(h=>h.status==="Completed").length;
+    const delayed = base.filter(h=>h.status==="Delayed").length;
+    const inprog = base.filter(h=>h.status==="In Progress").length;
 
     byId("rep-total").textContent = total;
     byId("rep-pending").textContent = pending;
     byId("rep-completed").textContent = completed;
     byId("rep-delayed").textContent = delayed;
 
-    const statusCanvas = byId("reports-status-chart");
-    const userCanvas = byId("reports-user-chart");
-    if (!statusCanvas || !userCanvas) return;
+    const c1 = byId("chart-status");
+    const c2 = byId("chart-user");
+    if (!c1 || !c2) return;
 
-    if (reportsStatusChart) reportsStatusChart.destroy();
-    reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
-      type: "bar",
-      data: { labels: ["Pending", "In Progress", "Completed", "Delayed"], datasets: [{ label: "Handovers", data: [pending, inProgress, completed, delayed] }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 11 } } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+    if (charts.status) charts.status.destroy();
+    charts.status = new Chart(c1.getContext("2d"), {
+      type:"bar",
+      data:{ labels:["Pending","In Progress","Completed","Delayed"], datasets:[{ label:"Handovers", data:[pending,inprog,completed,delayed] }] },
+      options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
     });
 
     const byUser = {};
-    base.forEach(h => { const key = h.actionBy || "Unknown"; byUser[key] = (byUser[key] || 0) + 1; });
-    const userLabels = Object.keys(byUser);
-    const userData = Object.values(byUser);
+    base.forEach(h=>{
+      const k = h.actionBy || "Unknown";
+      byUser[k] = (byUser[k]||0) + 1;
+    });
 
-    if (reportsUserChart) reportsUserChart.destroy();
-    reportsUserChart = new Chart(userCanvas.getContext("2d"), {
-      type: "bar",
-      data: { labels: userLabels, datasets: [{ label: "Handovers", data: userData }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 11 } } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+    if (charts.user) charts.user.destroy();
+    charts.user = new Chart(c2.getContext("2d"), {
+      type:"bar",
+      data:{ labels:Object.keys(byUser), datasets:[{ label:"Handovers", data:Object.values(byUser) }] },
+      options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
     });
   }
 
-  function exportHandoverExcel() {
-    const source = (filteredHandovers && filteredHandovers.length > 0) ? filteredHandovers : getVisibleHandovers();
-    const data = source.map(h => ({
-      "HNDR ID": h.id,
+  // ===== Excel Export =====
+  function exportExcel(){
+    const data = (filtered.length ? filtered : visibleHandovers()).map(h=>({
+      "ID": h.id,
       "From": h.from,
       "To": h.to,
       "Items": h.items,
@@ -1529,867 +1164,735 @@
       "Date": h.date || "",
       "Action By": h.actionBy || "",
       "Attachment Name": h.attachmentName || "None",
-      "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
+      "Attachment Link": h.attachmentDataUrl || ""
     }));
 
-    if (data.length === 0) { alert("No records to export."); return; }
-    if (typeof XLSX === "undefined") { alert("XLSX library is not loaded."); return; }
+    if (!data.length) return alert("No records to export.");
+    if (typeof XLSX === "undefined") return alert("XLSX is not loaded.");
 
     const ws = XLSX.utils.json_to_sheet(data);
-
-    if (ws["!ref"]) {
-      const range = XLSX.utils.decode_range(ws["!ref"]);
-      let linkColIndex = null;
-      let nameColIndex = null;
-
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const headerAddress = XLSX.utils.encode_cell({ c: C, r: 0 });
-        const headerCell = ws[headerAddress];
-        if (!headerCell) continue;
-        if (headerCell.v === "Attachment Link") linkColIndex = C;
-        if (headerCell.v === "Attachment Name") nameColIndex = C;
-      }
-
-      if (linkColIndex !== null) {
-        for (let R = 1; R <= range.e.r; ++R) {
-          const linkAddress = XLSX.utils.encode_cell({ c: linkColIndex, r: R });
-          const cell = ws[linkAddress];
-          if (cell && cell.v) {
-            const url = cell.v;
-            let displayText = "Open Attachment";
-            if (nameColIndex !== null) {
-              const nameAddress = XLSX.utils.encode_cell({ c: nameColIndex, r: R });
-              const nameCell = ws[nameAddress];
-              if (nameCell && nameCell.v && nameCell.v !== "None") displayText = nameCell.v;
-            }
-            cell.l = { Target: url, Tooltip: "Open attachment in browser" };
-            cell.v = displayText;
-          }
-        }
-      }
-    }
-
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Handover List");
-    XLSX.writeFile(wb, "Handover_List.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Handovers");
+    XLSX.writeFile(wb, "handover_list.xlsx");
   }
 
-  function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // ===== Attachments =====
+  function readFileAsDataUrl(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
     });
   }
 
-  function setSelectOptions(select, values, includeEmpty, emptyLabel) {
-    if (!select) return;
-    const current = select.value;
-    select.innerHTML = "";
-    if (includeEmpty) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = emptyLabel || "All";
-      select.appendChild(opt);
-    }
-    values.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      select.appendChild(opt);
-    });
-    if (current && values.includes(current)) select.value = current;
-  }
+  // ===== Handover Modal Logic =====
+  function initHandoverModal(){
+    modals.handover = new bootstrap.Modal(byId("handover-modal"));
 
-  function refreshUserSelectOptions() {
-    const names = users.map(u => u.name);
+    const form = byId("handover-form");
+    const titleEl = byId("handover-modal-title");
 
-    setSelectOptions(byId("filter-from"), names, true, "All");
-    setSelectOptions(byId("filter-to"), names, true, "All");
+    const fId = byId("handover-id");
+    const fFrom = byId("handover-from");
+    const fTo = byId("handover-to");
+    const fItems = byId("handover-items");
+    const fLong = byId("handover-long");
+    const fPr = byId("handover-priority");
+    const fSt = byId("handover-status");
+    const fDate = byId("handover-date");
+    const fAction = byId("handover-actionby");
+    const fAtt = byId("handover-attachment");
+    const attInfo = byId("attachment-info");
+    const saveBtn = byId("handover-save-btn");
 
-    if (inputTo && inputActionBy) {
-      setSelectOptions(inputTo, names, false);
-      setSelectOptions(inputActionBy, names, false);
-    }
-    fillAccountEmployeeOptions();
-  }
-
-  function setupFromForNewHandover() {
-    if (!inputFrom) return;
-
-    const acc = getLoggedInAccount();
-    const linkedName = acc?.employeeName?.trim();
-
-    inputFrom.innerHTML = "";
-
-    if (linkedName) {
-      const opt = document.createElement("option");
-      opt.value = linkedName;
-      opt.textContent = linkedName;
-      inputFrom.appendChild(opt);
-      inputFrom.value = linkedName;
-    } else {
-      const names = users.map(u => u.name);
-      setSelectOptions(inputFrom, names, false);
-      if (names.length > 0) inputFrom.value = names[0];
-    }
-
-    inputFrom.setAttribute("disabled", "disabled");
-  }
-
-  function refreshActiveAccountSelect() {
-    const select = byId("active-account-select");
-    if (!select) return;
-
-    const currentValue = activeAccountUsername || "";
-    select.innerHTML = "";
-
-    const optGuest = document.createElement("option");
-    optGuest.value = "";
-    optGuest.textContent = "Guest (no login)";
-    select.appendChild(optGuest);
-
-    accounts.forEach(acc => {
-      const opt = document.createElement("option");
-      opt.value = acc.username;
-      opt.textContent = `${acc.username} (${acc.role || "User"})`;
-      select.appendChild(opt);
-    });
-
-    select.value = currentValue;
-    select.onchange = () => {
-      activeAccountUsername = select.value || "";
-      saveActiveAccount();
-    };
-  }
-
-  function setHandoverFormReadOnly(readOnly) {
-    const fields = [inputTo, inputItems, inputLongDesc, inputPriority, inputStatus, inputDate, inputActionBy, attachmentInput];
-    fields.forEach(el => {
-      if (!el) return;
-      if (readOnly) el.setAttribute("disabled", "disabled");
-      else el.removeAttribute("disabled");
-    });
-    if (inputFrom) inputFrom.setAttribute("disabled", "disabled");
-    if (handoverSaveBtn) handoverSaveBtn.style.display = readOnly ? "none" : "inline-block";
-  }
-
-  function initHandoverModal() {
-    const modalEl = byId("handover-modal");
-    if (!modalEl) return;
-    handoverModal = new bootstrap.Modal(modalEl);
-    handoverForm = byId("handover-form");
-    modalTitleEl = byId("handover-modal-title");
-
-    inputId = byId("handover-id");
-    inputFrom = byId("handover-from");
-    inputTo = byId("handover-to");
-    inputItems = byId("handover-items");
-    inputLongDesc = byId("handover-long-desc");
-    inputPriority = byId("handover-priority");
-    inputStatus = byId("handover-status");
-    inputDate = byId("handover-date");
-    inputActionBy = byId("handover-action-by");
-    attachmentInput = byId("handover-attachment");
-    currentAttachmentInfo = byId("current-attachment-info");
-    handoverSaveBtn = byId("handover-save-btn");
-
-    refreshUserSelectOptions();
-
-    const openButtons = [byId("btn-add-handover"), byId("btn-add-handover-2")].filter(Boolean);
-
-    openButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc) { alert("You must be logged in to create a handover."); return; }
-        if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-        if (acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
-
-        isEditMode = false;
-        editingId = null;
-        editingReadOnly = false;
-
-        handoverForm.reset();
-        inputId.value = generateNextId();
-        inputDate.value = new Date().toISOString().slice(0, 10);
-        if (currentAttachmentInfo) currentAttachmentInfo.textContent = "No attachment";
-        if (attachmentInput) attachmentInput.value = "";
-        if (inputLongDesc) inputLongDesc.value = "";
-        if (inputPriority) inputPriority.value = "P3";
-
-        refreshUserSelectOptions();
-        setupFromForNewHandover();
-
-        if (users.length > 0 && inputTo) inputTo.value = users[0].name;
-
-        const loggedAcc = getLoggedInAccount();
-        if (loggedAcc && loggedAcc.employeeName && inputActionBy) inputActionBy.value = loggedAcc.employeeName;
-        else if (users.length > 0 && inputActionBy) inputActionBy.value = users[0].name;
-
-        setHandoverFormReadOnly(false);
-        if (modalTitleEl) modalTitleEl.textContent = "New Handover";
-        handoverModal.show();
+    function setReadOnly(ro){
+      [fTo,fItems,fLong,fPr,fSt,fDate,fAtt].forEach(el=>{
+        if (!el) return;
+        ro ? el.setAttribute("disabled","disabled") : el.removeAttribute("disabled");
       });
-    });
+      // From/ActionBy always locked to logged-in employee for new/edit (unless Admin/Supervisor editing can change to/from? we keep From locked always)
+      fFrom.setAttribute("disabled","disabled");
+      fAction.setAttribute("disabled","disabled");
+      saveBtn.style.display = ro ? "none" : "inline-block";
+    }
 
-    handoverForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      if (editingReadOnly) return;
-
+    function fillFromActionForLoggedIn(){
       const acc = getLoggedInAccount();
-      if (!acc) { alert("You must be logged in to save."); return; }
-      if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-      if (!isEditMode && acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
+      const emp = (acc?.employeeName || "").trim();
 
-      const from = inputFrom.value;
-      const to = inputTo.value;
-      const items = inputItems.value;
-      const longDescription = inputLongDesc.value;
-      const priority = inputPriority.value;
-      const status = inputStatus.value;
-      const date = inputDate.value;
-      const actionBy = inputActionBy.value;
-      const file = attachmentInput.files[0] || null;
+      // Must exist as employee name, otherwise still show option
+      fFrom.innerHTML = "";
+      fAction.innerHTML = "";
 
-      let attachmentName = null;
-      let attachmentType = null;
-      let attachmentSize = null;
-      let attachmentDataUrl = null;
-
-      if (isEditMode) {
-        const current = handovers.find(h => h.id === editingId);
-        if (current) {
-          if (!canEditHandover(current)) { alert("You are not allowed to edit this handover."); return; }
-          attachmentName = current.attachmentName || null;
-          attachmentType = current.attachmentType || null;
-          attachmentSize = current.attachmentSize || null;
-          attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
+      if (emp){
+        const o1 = document.createElement("option"); o1.value = emp; o1.textContent = emp;
+        const o2 = document.createElement("option"); o2.value = emp; o2.textContent = emp;
+        fFrom.appendChild(o1); fAction.appendChild(o2);
+        fFrom.value = emp; fAction.value = emp;
+      } else {
+        // No linked employee => fallback to first employee or empty
+        const names = employeeNames();
+        const name = names[0] || "";
+        if (name){
+          fFrom.appendChild(new Option(name,name));
+          fAction.appendChild(new Option(name,name));
+          fFrom.value = name; fAction.value = name;
+        } else {
+          fFrom.appendChild(new Option("(No employee linked)",""));
+          fAction.appendChild(new Option("(No employee linked)",""));
         }
       }
+    }
 
-      if (file) {
-        if (file.size > MAX_ATTACHMENT_SIZE) { alert("Attachment is too large (max ~3MB)."); return; }
-        attachmentName = file.name;
-        attachmentType = file.type || null;
-        attachmentSize = file.size;
-        attachmentDataUrl = await readFileAsDataUrl(file);
+    function openNew(){
+      const acc = getLoggedInAccount();
+      if (!acc) return alert("You must be logged in.");
+      if ((acc.status||"Active")==="Disabled") return alert("Account disabled.");
+      if (acc.role === "Viewer") return alert("Viewer cannot create handovers.");
+      if (!employees.length) return alert("Please add employees first (Employees page).");
+      if (!acc.employeeName) return alert("Please link this account to an employee (Accounts page).");
+
+      edit.handover = { mode:false, id:null, readOnly:false };
+
+      form.reset();
+      refreshEmployeeSelects();
+
+      fDate.value = nowDateISO();
+      fId.value = nextHandoverId(fDate.value);
+
+      fillFromActionForLoggedIn();
+      fFrom.setAttribute("disabled","disabled");
+      fAction.setAttribute("disabled","disabled");
+
+      // default to first employee not equal from
+      const fromName = fFrom.value;
+      const names = employeeNames().filter(n=>n !== fromName);
+      setSelectOptions(fTo, names.length ? names : employeeNames(), false);
+      fTo.value = (names[0] || employeeNames()[0] || "");
+
+      fPr.value = "P3";
+      fSt.value = "Pending";
+      attInfo.textContent = "No attachment";
+      fAtt.value = "";
+
+      titleEl.textContent = "New Handover";
+      setReadOnly(false);
+      modals.handover.show();
+    }
+
+    async function saveSubmit(e){
+      e.preventDefault();
+      if (edit.handover.readOnly) return;
+
+      const acc = getLoggedInAccount();
+      if (!acc) return alert("Not logged in.");
+      if ((acc.status||"Active")==="Disabled") return alert("Account disabled.");
+
+      // required: must be linked
+      const emp = (acc.employeeName || "").trim();
+      if (!emp) return alert("This account is not linked to an employee (Accounts page).");
+
+      const payload = {
+        id: edit.handover.mode ? edit.handover.id : fId.value,
+        from: emp,                // ✅ ALWAYS logged-in employee
+        to: (fTo.value||"").trim(),
+        items: (fItems.value||"").trim(),
+        longDescription: (fLong.value||"").trim(),
+        priority: fPr.value,
+        status: fSt.value,
+        date: fDate.value,
+        actionBy: emp,            // ✅ ALWAYS logged-in employee
+        attachmentName: null,
+        attachmentType: null,
+        attachmentSize: null,
+        attachmentDataUrl: null
+      };
+
+      // Editing: preserve existing attachment if no new file
+      if (edit.handover.mode){
+        const cur = handovers.find(h=>h.id===edit.handover.id);
+        if (!cur) return;
+        if (!canEditHandover(cur)) return alert("Not allowed.");
+        payload.attachmentName = cur.attachmentName || null;
+        payload.attachmentType = cur.attachmentType || null;
+        payload.attachmentSize = cur.attachmentSize || null;
+        payload.attachmentDataUrl = cur.attachmentDataUrl || null;
       }
 
-      if (isEditMode) {
-        const idx = handovers.findIndex(h => h.id === editingId);
-        if (idx === -1) return;
-        handovers[idx] = { ...handovers[idx], from, to, items, longDescription, priority, status, date, actionBy, attachmentName, attachmentType, attachmentSize, attachmentDataUrl };
+      const file = fAtt.files[0] || null;
+      if (file){
+        if (file.size > MAX_ATTACHMENT_SIZE) return alert("Attachment too large (max ~3MB).");
+        payload.attachmentName = file.name;
+        payload.attachmentType = file.type || null;
+        payload.attachmentSize = file.size;
+        payload.attachmentDataUrl = await readFileAsDataUrl(file);
+      }
+
+      // Save to list
+      if (edit.handover.mode){
+        const idx = handovers.findIndex(h=>h.id===edit.handover.id);
+        if (idx < 0) return;
+        handovers[idx] = { ...handovers[idx], ...payload };
       } else {
-        const id = inputId.value;
-        handovers.push({ id, from, to, items, longDescription, priority, status, date, actionBy, attachmentName, attachmentType, attachmentSize, attachmentDataUrl });
+        handovers.push(payload);
       }
 
-      saveHandovers();
+      saveAll();
       applyFilters();
-      handoverModal.hide();
-      attachmentInput.value = "";
-    });
-  }
-
-  function openEditHandover(id) {
-    const h = handovers.find(x => x.id === id);
-    if (!h) return;
-
-    isEditMode = true;
-    editingId = id;
-
-    handoverForm.reset();
-    refreshUserSelectOptions();
-
-    const fromName = h.from || "";
-    if (inputFrom) {
-      inputFrom.innerHTML = "";
-      if (fromName) {
-        const opt = document.createElement("option");
-        opt.value = fromName;
-        opt.textContent = fromName;
-        inputFrom.appendChild(opt);
-        inputFrom.value = fromName;
-      }
-      inputFrom.setAttribute("disabled", "disabled");
+      modals.handover.hide();
     }
 
-    inputId.value = h.id;
-    inputTo.value = h.to;
-    inputItems.value = h.items;
-    inputLongDesc.value = h.longDescription || "";
-    inputPriority.value = h.priority || "P3";
-    inputStatus.value = h.status;
-    inputDate.value = h.date;
-    inputActionBy.value = h.actionBy || (users[0] ? users[0].name : "");
-    attachmentInput.value = "";
+    function openEdit(id){
+      const h = handovers.find(x=>x.id===id);
+      if (!h) return;
 
-    if (currentAttachmentInfo) {
-      if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
-        currentAttachmentInfo.textContent = "Current attachment: " + h.attachmentName + (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
+      edit.handover.mode = true;
+      edit.handover.id = id;
+
+      refreshEmployeeSelects();
+
+      // Fill fields
+      fId.value = h.id;
+      fItems.value = h.items || "";
+      fLong.value = h.longDescription || "";
+      fPr.value = h.priority || "P3";
+      fSt.value = h.status || "Pending";
+      fDate.value = h.date || nowDateISO();
+
+      // From/ActionBy locked (by design)
+      fFrom.innerHTML = "";
+      fAction.innerHTML = "";
+      fFrom.appendChild(new Option(h.from || "", h.from || ""));
+      fAction.appendChild(new Option(h.actionBy || "", h.actionBy || ""));
+      fFrom.value = h.from || "";
+      fAction.value = h.actionBy || "";
+      fFrom.setAttribute("disabled","disabled");
+      fAction.setAttribute("disabled","disabled");
+
+      // To options
+      const names = employeeNames();
+      setSelectOptions(fTo, names, false);
+      fTo.value = h.to || (names[0] || "");
+
+      byId("handover-attachment").value = "";
+      if (h.attachmentName && h.attachmentDataUrl){
+        byId("attachment-info").textContent = `Current attachment: ${h.attachmentName}`;
       } else {
-        currentAttachmentInfo.textContent = "No attachment";
+        byId("attachment-info").textContent = "No attachment";
       }
+
+      const editable = canEditHandover(h);
+      edit.handover.readOnly = !editable;
+
+      titleEl.textContent = editable ? "Edit Handover" : "View Handover";
+      setReadOnly(!editable);
+      modals.handover.show();
     }
 
-    const editable = canEditHandover(h);
-    editingReadOnly = !editable;
-    setHandoverFormReadOnly(!editable);
+    onId("btn-add-handover", "click", openNew);
+    onId("btn-add-handover-2", "click", openNew);
+    form.addEventListener("submit", saveSubmit);
 
-    if (modalTitleEl) modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
-    handoverModal.show();
+    // expose for table buttons
+    window.__openHandover = openEdit;
   }
 
-  function setActiveView(view, save = true) {
-    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-    const views = document.querySelectorAll(".view-section");
+  function openHandover(id){ window.__openHandover?.(id); }
 
-    if (view === "admin-users" || view === "deleted-handovers") {
+  // ===== Employees =====
+  function initEmployees(){
+    modals.employee = new bootstrap.Modal(byId("employee-modal"));
+
+    function render(){
+      const tbody = byId("employees-tbody");
+      tbody.innerHTML = "";
+      employees.forEach((e, i)=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${e.name}</td>
+          <td>${e.role || ""}</td>
+          <td>${e.email || ""}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-secondary btn-emp-edit" data-i="${i}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger btn-emp-del" data-i="${i}"><i class="bi bi-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll(".btn-emp-edit").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const i = parseInt(btn.getAttribute("data-i"),10);
+          openEdit(i);
+        });
+      });
+      document.querySelectorAll(".btn-emp-del").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const i = parseInt(btn.getAttribute("data-i"),10);
+          const ok = confirm("Delete this employee?");
+          if (!ok) return;
+          const name = employees[i]?.name;
+          // Prevent deleting if used in handovers or linked to account
+          const used = handovers.some(h=>h.from===name||h.to===name||h.actionBy===name) || accounts.some(a=>a.employeeName===name);
+          if (used) return alert("Cannot delete: this employee is referenced in handovers or accounts.");
+          employees.splice(i,1);
+          saveAll();
+          refreshEmployeeSelects();
+          render();
+          applyFilters();
+        });
+      });
+    }
+
+    function openEdit(i){
+      edit.employeeIndex = i;
+      const e = employees[i];
+      byId("emp-edit-name").value = e.name || "";
+      byId("emp-edit-role").value = e.role || "";
+      byId("emp-edit-email").value = e.email || "";
+      modals.employee.show();
+    }
+
+    onId("employee-form","submit",(ev)=>{
+      ev.preventDefault();
+      const name = (byId("emp-name").value||"").trim();
+      if (!name) return;
+      if (employees.some(x => x.name.toLowerCase() === name.toLowerCase())) return alert("Employee already exists.");
+
+      employees.push({
+        name,
+        role: (byId("emp-role").value||"").trim(),
+        email:(byId("emp-email").value||"").trim()
+      });
+      saveAll();
+      byId("emp-name").value = "";
+      byId("emp-role").value = "";
+      byId("emp-email").value = "";
+      refreshEmployeeSelects();
+      render();
+    });
+
+    onId("employee-edit-form","submit",(ev)=>{
+      ev.preventDefault();
+      const i = edit.employeeIndex;
+      if (i === null || i === undefined) return;
+      const oldName = employees[i]?.name;
+      const name = (byId("emp-edit-name").value||"").trim();
+      if (!name) return;
+
+      // if name changed, update references
+      if (oldName && oldName !== name){
+        // Prevent conflict
+        if (employees.some((x,idx)=> idx!==i && x.name.toLowerCase()===name.toLowerCase())) return alert("Name already exists.");
+
+        handovers.forEach(h=>{
+          if (h.from===oldName) h.from=name;
+          if (h.to===oldName) h.to=name;
+          if (h.actionBy===oldName) h.actionBy=name;
+        });
+        deleted.forEach(h=>{
+          if (h.from===oldName) h.from=name;
+          if (h.to===oldName) h.to=name;
+          if (h.actionBy===oldName) h.actionBy=name;
+        });
+        accounts.forEach(a=>{
+          if (a.employeeName===oldName) a.employeeName=name;
+        });
+      }
+
+      employees[i] = { name, role:(byId("emp-edit-role").value||"").trim(), email:(byId("emp-edit-email").value||"").trim() };
+      saveAll();
+      refreshEmployeeSelects();
+      modals.employee.hide();
+      applyFilters();
+      render();
+    });
+
+    window.__renderEmployees = render;
+  }
+
+  // ===== Accounts (Admin) =====
+  function initAccounts(){
+    modals.account = new bootstrap.Modal(byId("account-modal"));
+
+    function render(){
+      const tbody = byId("accounts-tbody");
+      tbody.innerHTML = "";
+
+      accounts.forEach((a,i)=>{
+        const badge = (a.status||"Active")==="Disabled" ? "bg-secondary-subtle text-secondary" : "bg-success-subtle text-success";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${a.username}</td>
+          <td>${a.employeeName || "-"}</td>
+          <td>${a.role || "User"}</td>
+          <td><span class="badge rounded-pill ${badge}">${a.status || "Active"}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline-secondary btn-acc-edit" data-i="${i}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger btn-acc-del" data-i="${i}"><i class="bi bi-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll(".btn-acc-edit").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const i = parseInt(btn.getAttribute("data-i"),10);
+          openEdit(i);
+        });
+      });
+
+      document.querySelectorAll(".btn-acc-del").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const acc = getLoggedInAccount();
+          if (!acc || acc.role !== "Admin") return alert("Admin only.");
+          const i = parseInt(btn.getAttribute("data-i"),10);
+          const target = accounts[i];
+          if (!target) return;
+
+          const ok = confirm(`Delete account "${target.username}" ?`);
+          if (!ok) return;
+
+          // Prevent deleting last admin
+          const admins = accounts.filter(x => x.role === "Admin");
+          if (target.role === "Admin" && admins.length === 1) return alert("Cannot delete the last Admin.");
+
+          const session = getSession();
+          accounts.splice(i,1);
+          saveAll();
+          render();
+
+          if (session.username === target.username){
+            setSession("");
+            showLogin();
+          }
+        });
+      });
+    }
+
+    function openNew(){
       const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can access this page."); return; }
+      if (!acc || acc.role !== "Admin") return alert("Admin only.");
+
+      edit.account = { mode:false, index:null };
+      byId("account-form").reset();
+      refreshEmployeeSelects();
+      byId("acc-status").value = "Active";
+      byId("acc-password").value = "";
+      modals.account.show();
     }
 
-    navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("data-view") === view));
-    views.forEach(section => section.classList.toggle("d-none", section.getAttribute("data-view") !== view));
+    function openEdit(i){
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") return alert("Admin only.");
 
-    if (save) localStorage.setItem("warehouseActiveView", view);
-  }
+      edit.account = { mode:true, index:i };
+      refreshEmployeeSelects();
 
-  function initSidebarNavigation() {
-    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-    navLinks.forEach(link => {
-      link.addEventListener("click", e => {
-        e.preventDefault();
-        const view = link.getAttribute("data-view");
-        if (!view) return;
-        setActiveView(view, true);
-      });
-    });
-  }
-
-  function renderUsers() {
-    const tbody = byId("users-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
-    users.forEach((u, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${u.name}</td>
-        <td>${u.role || ""}</td>
-        <td>${u.email || ""}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary btn-edit-user" data-index="${index}">
-            <i class="bi bi-pencil"></i>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll(".btn-edit-user").forEach(btn => {
-      btn.addEventListener("click", () => openEditUser(parseInt(btn.getAttribute("data-index"), 10)));
-    });
-  }
-
-  function initUserForm() {
-    const form = byId("user-form");
-    const nameInput = byId("user-name");
-    const roleInput = byId("user-role");
-    const emailInput = byId("user-email");
-    if (!form) return;
-
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const name = (nameInput?.value || "").trim();
-      const role = (roleInput?.value || "").trim();
-      const email = (emailInput?.value || "").trim();
-      if (!name) return;
-      users.push({ name, role, email });
-      saveUsers();
-      renderUsers();
-      refreshUserSelectOptions();
-      if (nameInput) nameInput.value = "";
-      if (roleInput) roleInput.value = "";
-      if (emailInput) emailInput.value = "";
-    });
-  }
-
-  function initUserModal() {
-    const modalEl = byId("user-modal");
-    if (!modalEl) return;
-    userModal = new bootstrap.Modal(modalEl);
-    userEditForm = byId("user-edit-form");
-    editUserNameInput = byId("edit-user-name");
-    editUserRoleInput = byId("edit-user-role");
-    editUserEmailInput = byId("edit-user-email");
-
-    userEditForm.addEventListener("submit", e => {
-      e.preventDefault();
-      if (editingUserIndex === null) return;
-      const name = editUserNameInput.value.trim();
-      const role = editUserRoleInput.value.trim();
-      const email = editUserEmailInput.value.trim();
-      if (!name) return;
-      users[editingUserIndex] = { name, role, email };
-      saveUsers();
-      renderUsers();
-      refreshUserSelectOptions();
-      userModal.hide();
-    });
-  }
-
-  function openEditUser(index) {
-    const u = users[index];
-    if (!u) return;
-    editingUserIndex = index;
-    editUserNameInput.value = u.name;
-    editUserRoleInput.value = u.role || "";
-    editUserEmailInput.value = u.email || "";
-    userModal.show();
-  }
-
-  function renderAccounts() {
-    const tbody = byId("accounts-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
-    accounts.forEach((acc, index) => {
-      const badgeClass = acc.status === "Disabled" ? "bg-secondary-subtle text-secondary" : "bg-success-subtle text-success";
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${acc.username}</td>
-        <td>${acc.employeeName || "-"}</td>
-        <td>${acc.role || ""}</td>
-        <td><span class="badge rounded-pill ${badgeClass}">${acc.status || "Active"}</span></td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${index}">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger btn-delete-account" data-index="${index}">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll(".btn-edit-account").forEach(btn => {
-      btn.addEventListener("click", () => openEditAccount(parseInt(btn.getAttribute("data-index"), 10)));
-    });
-
-    document.querySelectorAll(".btn-delete-account").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-index"), 10);
-        const acc = accounts[idx];
-        if (!acc) return;
-        const ok = confirm(`Are you sure you want to delete account "${acc.username}"?`);
-        if (!ok) return;
-
-        accounts.splice(idx, 1);
-        saveAccounts();
-        renderAccounts();
-        refreshActiveAccountSelect();
-
-        if (acc.username === getLoggedInUsername()) {
-          setLoggedInUsername("");
-          activeAccountUsername = "";
-          saveActiveAccount();
-          showLoginPage();
-          updateCurrentUserLabel();
-        }
-      });
-    });
-
-    refreshActiveAccountSelect();
-  }
-
-  function fillAccountEmployeeOptions() {
-    if (!accountEmployeeSelect) return;
-    accountEmployeeSelect.innerHTML = "";
-    const optNone = document.createElement("option");
-    optNone.value = "";
-    optNone.textContent = "(No linked employee)";
-    accountEmployeeSelect.appendChild(optNone);
-
-    users.forEach(u => {
-      const opt = document.createElement("option");
-      opt.value = u.name;
-      opt.textContent = u.name;
-      accountEmployeeSelect.appendChild(opt);
-    });
-  }
-
-  function initAccountModal() {
-    const modalEl = byId("account-modal");
-    if (!modalEl) return;
-    accountModal = new bootstrap.Modal(modalEl);
-
-    accountForm = byId("account-form");
-    accountUsernameInput = byId("account-username");
-    accountEmployeeSelect = byId("account-employee");
-    accountRoleSelect = byId("account-role");
-    accountStatusSelect = byId("account-status");
-    accountPasswordInput = byId("account-password");
-
-    fillAccountEmployeeOptions();
-
-    const btnAdd = byId("btn-add-account");
-    if (btnAdd) {
-      btnAdd.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") { alert("Only Admin can add accounts."); return; }
-        isEditAccount = false;
-        editingAccountIndex = null;
-        accountForm.reset();
-        fillAccountEmployeeOptions();
-        accountStatusSelect.value = "Active";
-        accountPasswordInput.value = "";
-        accountModal.show();
-      });
+      const a = accounts[i];
+      byId("acc-username").value = a.username;
+      byId("acc-employee").value = a.employeeName || "";
+      byId("acc-role").value = a.role || "User";
+      byId("acc-status").value = a.status || "Active";
+      byId("acc-password").value = "";
+      modals.account.show();
     }
 
-    accountForm.addEventListener("submit", e => {
-      e.preventDefault();
-      const accLogged = getLoggedInAccount();
-      if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
+    onId("btn-add-account","click", openNew);
 
-      const username = accountUsernameInput.value.trim();
-      const employeeName = accountEmployeeSelect.value || "";
-      const role = accountRoleSelect.value || "User";
-      const status = accountStatusSelect.value || "Active";
-      const rawPassword = (accountPasswordInput.value || "").trim();
+    onId("account-form","submit",(ev)=>{
+      ev.preventDefault();
+      const admin = getLoggedInAccount();
+      if (!admin || admin.role !== "Admin") return alert("Admin only.");
+
+      const username = (byId("acc-username").value||"").trim();
+      const employeeName = (byId("acc-employee").value||"").trim();
+      const role = byId("acc-role").value || "User";
+      const status = byId("acc-status").value || "Active";
+      const pw = (byId("acc-password").value||"").trim();
+
       if (!username) return;
 
-      if (isEditAccount && editingAccountIndex !== null) {
-        const existing = accounts[editingAccountIndex];
-        accounts[editingAccountIndex] = { ...existing, username, employeeName, role, status, password: rawPassword ? rawPassword : existing.password };
+      if (!edit.account.mode){
+        if (accounts.some(x => x.username.toLowerCase() === username.toLowerCase())) return alert("Username already exists.");
+        accounts.push({
+          username,
+          employeeName,
+          role,
+          status,
+          password: pw || "1234"
+        });
       } else {
-        const password = rawPassword || "1234";
-        accounts.push({ username, employeeName, role, status, password });
+        const i = edit.account.index;
+        const cur = accounts[i];
+        if (!cur) return;
+        // username change uniqueness
+        if (cur.username !== username && accounts.some(x => x.username.toLowerCase() === username.toLowerCase())) return alert("Username already exists.");
+        accounts[i] = {
+          ...cur,
+          username,
+          employeeName,
+          role,
+          status,
+          password: pw ? pw : cur.password
+        };
       }
-      saveAccounts();
-      renderAccounts();
-      refreshActiveAccountSelect();
-      accountPasswordInput.value = "";
-      accountModal.hide();
+
+      saveAll();
+      modals.account.hide();
+      render();
+      updateUserBadges();
+      applyFilters();
+    });
+
+    window.__renderAccounts = render;
+  }
+
+  // ===== Sidebar navigation =====
+  function initNav(){
+    document.querySelectorAll(".sidebar-nav .nav-link").forEach(a=>{
+      a.addEventListener("click",(e)=>{
+        e.preventDefault();
+        const view = a.getAttribute("data-view");
+        if (view) setActiveView(view);
+      });
     });
   }
 
-  function openEditAccount(index) {
-    const acc = accounts[index];
-    if (!acc) return;
-
-    const accLogged = getLoggedInAccount();
-    if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
-
-    isEditAccount = true;
-    editingAccountIndex = index;
-    fillAccountEmployeeOptions();
-    accountUsernameInput.value = acc.username;
-    accountEmployeeSelect.value = acc.employeeName || "";
-    accountRoleSelect.value = acc.role || "User";
-    accountStatusSelect.value = acc.status || "Active";
-    accountPasswordInput.value = "";
-    accountModal.show();
-  }
-
-  function initResequenceButton() {
-    const btn = byId("btn-resequence-ids");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
+  // ===== JSON Import/Export (Admin) =====
+  function initJsonIO(){
+    onId("btn-export-json","click",()=>{
       const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can resequence HNDR IDs."); return; }
+      if (!acc || acc.role !== "Admin") return alert("Admin only.");
 
-      const ok = confirm("This will resequence ALL HNDR IDs starting from 0001 based on date (including deleted handovers).\nDo you want to continue?");
-      if (!ok) return;
-
-      resequenceAllHandoverIdsFromOne();
-      saveHandovers();
-      saveDeletedHandovers();
-
-      filteredHandovers = getVisibleHandovers();
-      renderTable();
-      renderDeletedHandovers();
-
-      alert("HNDR IDs resequenced successfully.");
-    });
-  }
-
-  function validateLogin(username, password) {
-    normalizeAccountsPasswords();
-    const acc = accounts.find(a => a.username === username);
-    if (!acc) return { ok: false, message: "Invalid username or password." };
-    if (acc.status === "Disabled") return { ok: false, message: "This account is disabled." };
-    if (acc.password !== password) return { ok: false, message: "Invalid username or password." };
-    return { ok: true, account: acc };
-  }
-
-  function showLoginPage() {
-    const loginPageEl = byId("login-page");
-    const appShellEl = byId("app-shell");
-    if (loginPageEl) loginPageEl.style.display = "flex";
-    if (appShellEl) appShellEl.style.display = "none";
-  }
-
-  function showApp() {
-    const loginPageEl = byId("login-page");
-    const appShellEl = byId("app-shell");
-    if (loginPageEl) loginPageEl.style.display = "none";
-    if (appShellEl) appShellEl.style.display = "flex";
-
-    refreshActiveAccountSelect();
-    const select = byId("active-account-select");
-    if (select && activeAccountUsername) select.value = activeAccountUsername;
-    updateCurrentUserLabel();
-  }
-
-  function updateCurrentUserLabel() {
-    const label = byId("current-user-label");
-    if (!label) return;
-    const acc = getLoggedInAccount();
-    label.textContent = acc ? `Logged in as: ${acc.username} (${acc.role || "User"})` : "Not logged in";
-  }
-
-  function initLogin() {
-    const loginForm = byId("login-form");
-    const loginUserInput = byId("login-username");
-    const loginPassInput = byId("login-password");
-    const loginErrorEl = byId("login-error");
-    if (!loginForm) return;
-
-    loginForm.addEventListener("submit", e => {
-      e.preventDefault();
-      const username = loginUserInput.value.trim();
-      const password = loginPassInput.value;
-
-      const result = validateLogin(username, password);
-      if (!result.ok) {
-        loginErrorEl.textContent = result.message;
-        loginErrorEl.style.display = "block";
-        return;
-      }
-
-      loginErrorEl.style.display = "none";
-      activeAccountUsername = result.account.username;
-      saveActiveAccount();
-      setLoggedInUsername(activeAccountUsername);
-
-      filteredHandovers = getVisibleHandovers();
-      showApp();
-      renderTable();
-      renderAccounts();
-      renderReports();
-      renderDeletedHandovers();
-
-      const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
-      setActiveView(savedView, false);
-    });
-
-    const storedLogin = getLoggedInUsername();
-    if (storedLogin) {
-      const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
-      if (acc) {
-        activeAccountUsername = storedLogin;
-        saveActiveAccount();
-        filteredHandovers = getVisibleHandovers();
-        showApp();
-        renderTable();
-        renderAccounts();
-        renderReports();
-        renderDeletedHandovers();
-        const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
-        setActiveView(savedView, false);
-        return;
-      } else {
-        setLoggedInUsername("");
-      }
-    }
-
-    showLoginPage();
-  }
-
-  function initExportJson() {
-    const btn = byId("btn-export-json");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can export JSON."); return; }
-
-      const accountsExport = accounts.map(acc => ({
-        username: acc.username,
-        employeeName: acc.employeeName,
-        role: acc.role,
-        status: acc.status,
+      // Export without passwords (safer)
+      const safeAccounts = accounts.map(a=>({
+        username:a.username,
+        employeeName:a.employeeName,
+        role:a.role,
+        status:a.status
       }));
 
-      const data = { exportedAt: new Date().toISOString(), handovers, users, accounts: accountsExport };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const data = {
+        exportedAt: new Date().toISOString(),
+        employees,
+        accounts: safeAccounts,
+        handovers,
+        deleted
+      };
+
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
       a.href = url;
-      a.download = `warehouse-data-${dateStr}.json`;
+      a.download = `warehouse-export-${nowDateISO()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
-  }
 
-  function initImportJson() {
-    const btn = byId("btn-import-json");
-    const input = byId("import-json-input");
-    if (!btn || !input) return;
-
-    btn.addEventListener("click", () => {
+    onId("btn-import-json","click",()=>{
       const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can import JSON."); return; }
-      input.click();
+      if (!acc || acc.role !== "Admin") return alert("Admin only.");
+      byId("import-json-input").click();
     });
 
-    input.addEventListener("change", async e => {
+    byId("import-json-input").addEventListener("change", async (e)=>{
+      const acc = getLoggedInAccount();
+      if (!acc || acc.role !== "Admin") return;
+
       const file = e.target.files[0];
       if (!file) return;
 
-      try {
+      try{
         const text = await file.text();
         const data = JSON.parse(text);
 
-        if (!data || !Array.isArray(data.handovers) || !Array.isArray(data.users) || !Array.isArray(data.accounts)) {
-          alert("Invalid JSON structure.\nThe file must contain: handovers, users, and accounts arrays.");
-          input.value = "";
+        if (!data || !Array.isArray(data.employees) || !Array.isArray(data.accounts) || !Array.isArray(data.handovers) || !Array.isArray(data.deleted)){
+          alert("Invalid JSON structure.");
           return;
         }
 
-        const ok = confirm("This will replace all current data (handovers, users, accounts) in this browser with the data from the file.\nDo you want to continue?");
-        if (!ok) { input.value = ""; return; }
+        const ok = confirm("This will REPLACE all current data in this browser.\nContinue?");
+        if (!ok) return;
 
+        // Restore (accounts imported without passwords => keep existing passwords if username matches)
+        const oldPw = {};
+        accounts.forEach(a => oldPw[a.username] = a.password);
+
+        employees = data.employees;
         handovers = data.handovers;
-        users = data.users;
-        accounts = data.accounts;
-        normalizeAccountsPasswords();
+        deleted   = data.deleted;
 
-        deletedHandovers = [];
-        resequenceAllHandoverIdsFromOne();
-        saveHandovers();
-        saveDeletedHandovers();
+        accounts = data.accounts.map(a => ({
+          ...a,
+          password: oldPw[a.username] || "1234"
+        }));
 
-        filteredHandovers = getVisibleHandovers();
-
-        renderUsers();
-        refreshUserSelectOptions();
-        renderTable();
-        renderAccounts();
-        renderReports();
-        refreshActiveAccountSelect();
-        renderDeletedHandovers();
-
-        alert("Data imported successfully.");
-      } catch (err) {
+        saveAll();
+        refreshEmployeeSelects();
+        window.__renderEmployees?.();
+        window.__renderAccounts?.();
+        applyFilters();
+        alert("Imported successfully.\nNote: passwords reset to 1234 if unknown.");
+      } catch(err){
         console.error(err);
-        alert("An error occurred while reading or parsing the JSON file.");
+        alert("Failed to import JSON.");
       } finally {
-        input.value = "";
+        e.target.value = "";
       }
     });
   }
 
-  function initLogout() {
-    const btn = byId("btn-logout");
-    if (!btn) return;
-    btn.addEventListener("click", () => {
-      setLoggedInUsername("");
-      activeAccountUsername = "";
-      saveActiveAccount();
-      filteredHandovers = [];
-      updateCurrentUserLabel();
-      showLoginPage();
-    });
-  }
-
-  // ✅ Admin wipe all data (localStorage)
-  function wipeAllDataAdmin() {
+  // ===== Wipe All (Admin) =====
+  function wipeAll(){
     const acc = getLoggedInAccount();
-    if (!acc || acc.role !== "Admin") {
-      alert("Only Admin can wipe all data.");
-      return;
-    }
+    if (!acc || acc.role !== "Admin") return alert("Admin only.");
 
-    const ok1 = confirm("WARNING:\nThis will DELETE ALL data in this browser (handovers, deleted handovers, users, accounts, IDs counter).\nContinue?");
+    const ok1 = confirm("WARNING: This will delete ALL local data in this browser.\nContinue?");
     if (!ok1) return;
 
     const code = prompt('Type WIPE to confirm:');
-    if ((code || "").trim().toUpperCase() !== "WIPE") {
-      alert("Cancelled.");
-      return;
-    }
+    if ((code||"").trim().toUpperCase() !== "WIPE") return alert("Cancelled.");
 
-    const keysToRemove = [
-      "warehouseUsers",
-      "warehouseHandovers",
-      "warehouseDeletedHandovers",
-      "warehouseAccounts",
-      "warehouseActiveAccountUsername",
-      "warehouseLoggedInAccountUsername",
-      "warehouseActiveView",
-      ID_COUNTER_STORAGE_KEY,
-    ];
-
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-
-    alert("All data wiped. The page will reload now.");
+    Object.values(STORE).forEach(k => localStorage.removeItem(k));
     location.reload();
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    // ✅ Safe event binding (fix for null addEventListener)
-    onId("filter-from", "change", applyFilters);
-    onId("filter-to", "change", applyFilters);
-    onId("filter-status", "change", applyFilters);
-    onId("filter-priority", "change", applyFilters);
-    onId("filter-date-from", "change", applyFilters);
-    onId("filter-date-to", "change", applyFilters);
-    onId("filter-search", "input", applyFilters);
-    onId("btn-reset-filters", "click", resetFilters);
-    onId("btn-export-excel", "click", exportHandoverExcel);
-    onId("btn-wipe-all", "click", wipeAllDataAdmin);
+  // ===== Setup / Login =====
+  function initSetupAndLogin(){
+    // Setup form
+    onId("setup-form","submit",(ev)=>{
+      ev.preventDefault();
+      const u = (byId("setup-username").value||"").trim();
+      const p = (byId("setup-password").value||"").trim();
+      const emp = (byId("setup-employee").value||"").trim();
 
-    loadUsers();
-    loadHandovers();
-    loadDeletedHandovers();
+      const err = byId("setup-error");
+      err.style.display="none";
 
-    resequenceAllHandoverIdsFromOne();
-    saveHandovers();
-    saveDeletedHandovers();
+      if (!u || !p){
+        err.textContent = "Username and password are required.";
+        err.style.display="block";
+        return;
+      }
 
-    loadAccounts();
-    loadActiveAccount();
+      if (accounts.length){
+        err.textContent = "Setup is already completed.";
+        err.style.display="block";
+        return;
+      }
 
-    initSidebarNavigation();
-    initUserForm();
-    initUserModal();
-    renderUsers();
+      // Optional employee creation if provided
+      if (emp){
+        if (!employees.some(e => e.name.toLowerCase() === emp.toLowerCase())){
+          employees.push({ name: emp, role: "Admin", email: "" });
+        }
+      }
 
+      accounts.push({
+        username: u,
+        employeeName: emp || "",
+        role: "Admin",
+        status: "Active",
+        password: p
+      });
+
+      saveAll();
+      showLogin();
+    });
+
+    // Login form
+    onId("login-form","submit",(ev)=>{
+      ev.preventDefault();
+      const u = (byId("login-username").value||"").trim();
+      const p = (byId("login-password").value||"");
+
+      const r = validateLogin(u,p);
+      const err = byId("login-error");
+      if (!r.ok){
+        err.textContent = r.message;
+        err.style.display="block";
+        return;
+      }
+      err.style.display="none";
+      setSession(r.account.username);
+
+      showApp();
+      updateUserBadges();
+      refreshEmployeeSelects();
+      window.__renderEmployees?.();
+      window.__renderAccounts?.();
+
+      setActiveView("dashboard");
+      applyFilters();
+    });
+  }
+
+  // ===== Logout =====
+  function initLogout(){
+    onId("btn-logout","click",()=>{
+      setSession("");
+      showLogin();
+    });
+  }
+
+  // ===== Init =====
+  document.addEventListener("DOMContentLoaded", ()=>{
+    loadAll();
+
+    // No defaults: if no accounts => setup page
+    if (!accounts.length){
+      showSetup();
+    } else {
+      // If session exists and user still valid => auto login
+      const sess = getSession().username;
+      const acc = accounts.find(a=>a.username===sess && (a.status||"Active")!=="Disabled");
+      if (acc){
+        showApp();
+      } else {
+        showLogin();
+      }
+    }
+
+    // Bind global buttons
+    onId("btn-reset-filters","click", resetFilters);
+    onId("btn-export-excel","click", exportExcel);
+    onId("btn-wipe-all","click", wipeAll);
+
+    // Filters
+    ["filter-from","filter-to","filter-status","filter-priority","filter-date-from","filter-date-to"]
+      .forEach(id => onId(id,"change", applyFilters));
+    onId("filter-search","input", applyFilters);
+
+    // Navigation
+    initNav();
+
+    // Modules
+    initEmployees();
+    initAccounts();
     initHandoverModal();
-    initAccountModal();
-
-    refreshUserSelectOptions();
-    renderAccounts();
-    initExportJson();
-    initImportJson();
-    refreshActiveAccountSelect();
+    initJsonIO();
+    initSetupAndLogin();
     initLogout();
-    initResequenceButton();
 
-    initLogin();
-    renderDeletedHandovers();
+    // Initial render when app visible
+    if (byId("app-shell").style.display !== "none"){
+      updateUserBadges();
+      refreshEmployeeSelects();
+      window.__renderEmployees?.();
+      window.__renderAccounts?.();
+      setActiveView("dashboard");
+      applyFilters();
+    }
   });
+
+})();
 </script>
+
 </body>
 </html>
