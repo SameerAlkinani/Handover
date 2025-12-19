@@ -6,16 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Bootstrap 5 -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
   <!-- Icons -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -26,8 +20,6 @@
   <style>
     :root {
       --primary-color: #145da0;
-      --primary-soft: #f0f6ff;
-      --accent-color: #f5a623;
       --bg-color: #f4f5f7;
     }
 
@@ -161,10 +153,6 @@
       font-weight: 600;
     }
 
-    .stat-trend {
-      font-size: 0.75rem;
-    }
-
     .filters-card,
     .table-card,
     .chart-card {
@@ -204,52 +192,18 @@
       font-size: 0.9rem;
     }
 
-    /* ✅ Compact Action By column (does NOT consume big space) */
-    td.action-by-cell {
-      max-width: 240px;         /* change if you want narrower/wider */
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;  /* shows ... */
-    }
-    .action-by-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 0; /* important for ellipsis */
-    }
-    .action-by-text {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
     .status-badge {
       border-radius: 999px;
       padding: 0.15rem 0.75rem;
       font-size: 0.75rem;
       font-weight: 500;
+      white-space: nowrap;
     }
 
-    .status-pending {
-      background: #fff7ed;
-      color: #c05621;
-    }
-
-    .status-completed {
-      background: #ecfdf3;
-      color: #166534;
-    }
-
-    .status-delayed {
-      background: #fef2f2;
-      color: #b91c1c;
-    }
-
-    .status-inprogress {
-      background: #eff6ff;
-      color: #1d4ed8;
-    }
+    .status-pending { background: #fff7ed; color: #c05621; }
+    .status-completed { background: #ecfdf3; color: #166534; }
+    .status-delayed { background: #fef2f2; color: #b91c1c; }
+    .status-inprogress { background: #eff6ff; color: #1d4ed8; }
 
     .table-card--resizable {
       resize: vertical;
@@ -259,57 +213,51 @@
       display: flex;
       flex-direction: column;
     }
-
     .table-card--resizable .table-responsive {
       flex: 1 1 auto;
       max-height: none;
       overflow-y: auto;
     }
 
-    @media (max-width: 992px) {
-      .app-shell {
-        flex-direction: column;
-      }
+    /* Compact Action By cell (no big space usage) */
+    .actionby-cell {
+      max-width: 360px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .actionby-badges {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .actionby-badges .badge {
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
+    @media (max-width: 992px) {
+      .app-shell { flex-direction: column; }
       .sidebar {
         width: 100%;
         flex-direction: row;
         align-items: center;
         gap: 1rem;
       }
-
-      .sidebar-nav {
-        display: flex;
-        flex-direction: row;
-        gap: 0.4rem;
-        flex-wrap: wrap;
-      }
-
-      .main-panel {
-        padding: 1rem;
-      }
-
-      .cards-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .filters-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      td.action-by-cell {
-        max-width: 180px;
-      }
+      .sidebar-nav { display: flex; flex-direction: row; gap: 0.4rem; flex-wrap: wrap; }
+      .main-panel { padding: 1rem; }
+      .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .actionby-cell { max-width: 220px; }
     }
 
     @media (max-width: 576px) {
-      .cards-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .filters-grid {
-        grid-template-columns: 1fr;
-      }
+      .cards-grid { grid-template-columns: 1fr; }
+      .filters-grid { grid-template-columns: 1fr; }
+      .actionby-cell { max-width: 160px; }
     }
   </style>
 </head>
@@ -332,9 +280,10 @@
       <div id="login-error" class="text-danger small mb-2" style="display:none;"></div>
       <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
+
+    <!-- Neutral text (does NOT reveal username/password patterns) -->
     <div class="mt-3 text-muted small text-center">
-      Use a username from <strong>Users (Admin)</strong>.<br/>
-      Password is set by the <strong>Admin</strong> for each account (initial default is <strong>1234</strong> for new accounts).
+      Please enter your assigned account credentials.
     </div>
   </div>
 </div>
@@ -348,44 +297,37 @@
         <div class="sidebar-brand-icon">WH</div>
         <div>
           <div class="fw-semibold">Warehouse</div>
-          <div style="font-size: 0.75rem; color: #9ca3af">
-            Handover Dashboard
-          </div>
+          <div style="font-size: 0.75rem; color: #9ca3af">Handover Dashboard</div>
         </div>
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="nav-link active" data-view="dashboard">
-          <i class="bi bi-grid"></i>
-          <span>Dashboard</span>
+          <i class="bi bi-grid"></i><span>Dashboard</span>
         </a>
         <a href="#" class="nav-link" data-view="handovers">
-          <i class="bi bi-box-seam"></i>
-          <span>Handovers</span>
+          <i class="bi bi-box-seam"></i><span>Handovers</span>
         </a>
         <a href="#" class="nav-link" data-view="deleted-handovers">
-          <i class="bi bi-trash3"></i>
-          <span>Deleted Handovers</span>
+          <i class="bi bi-trash3"></i><span>Deleted Handovers</span>
         </a>
         <a href="#" class="nav-link" data-view="warehouses">
-          <i class="bi bi-buildings"></i>
-          <span>Warehouses</span>
+          <i class="bi bi-buildings"></i><span>Warehouses</span>
         </a>
         <a href="#" class="nav-link" data-view="admin-users">
-          <i class="bi bi-people"></i>
-          <span>Users (Admin)</span>
+          <i class="bi bi-people"></i><span>Users (Admin)</span>
         </a>
         <a href="#" class="nav-link" data-view="reports">
-          <i class="bi bi-bar-chart-line"></i>
-          <span>Reports</span>
+          <i class="bi bi-bar-chart-line"></i><span>Reports</span>
         </a>
       </nav>
     </div>
+
     <div class="sidebar-footer">
       <div class="mb-2 small" id="current-user-label"></div>
       <button class="btn btn-sm btn-outline-light w-100 mb-2" id="btn-logout">
         <i class="bi bi-box-arrow-right"></i> Logout
       </button>
-      <div style="font-size:0.75rem;color:#9fb3ff;">v1.5 – Creator Visibility + Compact Action By</div>
+      <div style="font-size:0.75rem;color:#9fb3ff;">v1.6 – Creator Visibility + ActionBy Permissions</div>
     </div>
   </aside>
 
@@ -402,11 +344,12 @@
           </div>
         </div>
 
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <div class="d-flex align-items-center gap-1">
-            <span style="font-size:0.8rem;color:#6b7280;">User:</span>
-            <select id="active-account-select" class="form-select form-select-sm" style="width: 180px;"></select>
+        <div class="d-flex align-items-center gap-2">
+          <div class="small text-muted">
+            <i class="bi bi-person-circle"></i>
+            <span id="topbar-user"></span>
           </div>
+
           <button class="btn btn-sm btn-primary" id="btn-add-handover">
             <i class="bi bi-plus-lg"></i> New Handover
           </button>
@@ -424,39 +367,34 @@
             <i class="bi bi-arrows-move"></i>
           </div>
           <div class="stat-value" id="stat-total">0</div>
-          <div class="stat-trend text-success" id="stat-total-note">
-            Updated automatically
-          </div>
+          <div class="text-success" style="font-size:0.75rem;">Updated automatically</div>
         </div>
+
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
             <span class="stat-label">Pending</span>
             <i class="bi bi-hourglass-split"></i>
           </div>
           <div class="stat-value" id="stat-pending">0</div>
-          <div class="stat-trend text-warning" id="stat-pending-note">
-            Items awaiting confirmation
-          </div>
+          <div class="text-warning" style="font-size:0.75rem;">Items awaiting confirmation</div>
         </div>
+
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
             <span class="stat-label">Completed</span>
             <i class="bi bi-check2-circle"></i>
           </div>
           <div class="stat-value text-success" id="stat-completed">0</div>
-          <div class="stat-trend text-success-emphasis" id="stat-completed-note">
-            Successfully handed over
-          </div>
+          <div class="text-success-emphasis" style="font-size:0.75rem;">Successfully handed over</div>
         </div>
+
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
             <span class="stat-label">Delayed</span>
             <i class="bi bi-exclamation-triangle"></i>
           </div>
           <div class="stat-value text-danger" id="stat-delayed">0</div>
-          <div class="stat-trend text-danger-emphasis" id="stat-delayed-note">
-            Check issues and follow-up
-          </div>
+          <div class="text-danger-emphasis" style="font-size:0.75rem;">Check issues and follow-up</div>
         </div>
       </section>
 
@@ -464,10 +402,9 @@
       <section class="filters-card mt-2">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="mb-0">Filters</h6>
-          <button class="btn btn-sm btn-link p-0" id="btn-reset-filters">
-            Reset filters
-          </button>
+          <button class="btn btn-sm btn-link p-0" id="btn-reset-filters">Reset filters</button>
         </div>
+
         <div class="filters-grid">
           <div>
             <label class="form-label form-label-sm">From (Employee)</label>
@@ -475,12 +412,14 @@
               <option value="">All</option>
             </select>
           </div>
+
           <div>
             <label class="form-label form-label-sm">To (Employee)</label>
             <select id="filter-to" class="form-select form-select-sm">
               <option value="">All</option>
             </select>
           </div>
+
           <div>
             <label class="form-label form-label-sm">Status</label>
             <select id="filter-status" class="form-select form-select-sm">
@@ -491,6 +430,7 @@
               <option>Delayed</option>
             </select>
           </div>
+
           <div>
             <label class="form-label form-label-sm">Priority</label>
             <select id="filter-priority" class="form-select form-select-sm">
@@ -501,22 +441,20 @@
               <option value="P4">P4 - Negligible</option>
             </select>
           </div>
+
           <div>
             <label class="form-label form-label-sm">Date From</label>
-            <input type="date" id="filter-date-from" class="form-control form-control-sm" />
+            <input type="date" id="filter-date-from" class="form-control form-control-sm"/>
           </div>
+
           <div>
             <label class="form-label form-label-sm">Date To</label>
-            <input type="date" id="filter-date-to" class="form-control form-control-sm" />
+            <input type="date" id="filter-date-to" class="form-control form-control-sm"/>
           </div>
+
           <div>
             <label class="form-label form-label-sm">Search</label>
-            <input
-              type="text"
-              id="filter-search"
-              class="form-control form-control-sm"
-              placeholder="Search by ID or item..."
-            />
+            <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="Search by ID or item..."/>
           </div>
         </div>
       </section>
@@ -529,21 +467,22 @@
               <h6 class="mb-0">Handover List</h6>
               <span id="table-count" style="font-size: 0.8rem; color: #6b7280"></span>
             </div>
+
             <div class="table-responsive">
               <table class="table table-sm align-middle">
                 <thead>
-                <tr>
-                  <th>HNDR ID</th>
-                  <th>FROM</th>
-                  <th>TO</th>
-                  <th>ITEMS</th>
-                  <th>PRIORITY</th>
-                  <th>STATUS</th>
-                  <th>DATE</th>
-                  <th style="min-width:220px;">ACTION BY</th>
-                  <th>ATTACHMENT</th>
-                  <th style="width: 120px;">ACTIONS</th>
-                </tr>
+                  <tr>
+                    <th>HNDR ID</th>
+                    <th>FROM</th>
+                    <th>TO</th>
+                    <th>ITEMS</th>
+                    <th>PRIORITY</th>
+                    <th>STATUS</th>
+                    <th>DATE</th>
+                    <th>ACTION BY</th>
+                    <th>ATTACHMENT</th>
+                    <th style="width: 120px;">ACTIONS</th>
+                  </tr>
                 </thead>
                 <tbody id="handover-tbody"></tbody>
               </table>
@@ -572,21 +511,22 @@
           <h6 class="mb-0">Completed Handovers</h6>
           <span id="completed-count" style="font-size: 0.8rem; color: #6b7280"></span>
         </div>
+
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-            <tr>
-              <th>HNDR ID</th>
-              <th>FROM</th>
-              <th>TO</th>
-              <th>ITEMS</th>
-              <th>PRIORITY</th>
-              <th>STATUS</th>
-              <th>DATE</th>
-              <th style="min-width:220px;">ACTION BY</th>
-              <th>ATTACHMENT</th>
-              <th style="width: 120px;">ACTIONS</th>
-            </tr>
+              <tr>
+                <th>HNDR ID</th>
+                <th>FROM</th>
+                <th>TO</th>
+                <th>ITEMS</th>
+                <th>PRIORITY</th>
+                <th>STATUS</th>
+                <th>DATE</th>
+                <th>ACTION BY</th>
+                <th>ATTACHMENT</th>
+                <th style="width: 120px;">ACTIONS</th>
+              </tr>
             </thead>
             <tbody id="completed-tbody"></tbody>
           </table>
@@ -610,21 +550,22 @@
           <h6 class="mb-0">Deleted Handovers</h6>
           <span id="deleted-count" style="font-size: 0.8rem; color: #6b7280"></span>
         </div>
+
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-            <tr>
-              <th>HNDR ID</th>
-              <th>FROM</th>
-              <th>TO</th>
-              <th>ITEMS</th>
-              <th>PRIORITY</th>
-              <th>STATUS</th>
-              <th>DATE</th>
-              <th style="min-width:220px;">ACTION BY</th>
-              <th>ATTACHMENT</th>
-              <th style="width: 90px;">ACTIONS</th>
-            </tr>
+              <tr>
+                <th>HNDR ID</th>
+                <th>FROM</th>
+                <th>TO</th>
+                <th>ITEMS</th>
+                <th>PRIORITY</th>
+                <th>STATUS</th>
+                <th>DATE</th>
+                <th>ACTION BY</th>
+                <th>ATTACHMENT</th>
+                <th style="width: 90px;">ACTIONS</th>
+              </tr>
             </thead>
             <tbody id="deleted-handover-tbody"></tbody>
           </table>
@@ -646,7 +587,7 @@
       <div class="table-card mb-3">
         <h6>Warehouses List</h6>
         <p class="text-muted mb-0">
-          Placeholder for warehouses table (name, location, capacity, status, etc.).
+          Add your warehouses list here later (name, location, capacity, status, etc.).
         </p>
       </div>
 
@@ -654,6 +595,7 @@
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="mb-0">Users / Employees</h6>
         </div>
+
         <form id="user-form" class="row g-2 mb-3">
           <div class="col-md-4">
             <input type="text" id="user-name" class="form-control" placeholder="Employee name" required />
@@ -668,16 +610,17 @@
             <button type="submit" class="btn btn-primary">Add User</button>
           </div>
         </form>
+
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Email</th>
-              <th style="width: 70px;">Actions</th>
-            </tr>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Email</th>
+                <th style="width: 70px;">Actions</th>
+              </tr>
             </thead>
             <tbody id="users-tbody"></tbody>
           </table>
@@ -691,8 +634,7 @@
         <div>
           <div class="top-bar-title">Users (Admin)</div>
           <div style="font-size: 0.85rem; color: #6b7280">
-            Manage application accounts (username, role, and link to employees).
-            Passwords are local to this browser only.
+            Manage application accounts (username, role, status, and linked employee).
           </div>
         </div>
       </div>
@@ -709,17 +651,18 @@
             </button>
           </div>
         </div>
+
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-            <tr>
-              <th>#</th>
-              <th>Username</th>
-              <th>Employee</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th style="width: 100px;">Actions</th>
-            </tr>
+              <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Employee</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th style="width: 100px;">Actions</th>
+              </tr>
             </thead>
             <tbody id="accounts-tbody"></tbody>
           </table>
@@ -736,15 +679,14 @@
             Summary reports and KPI analytics for your handovers.
           </div>
         </div>
+
         <div class="d-flex align-items-center gap-2">
           <button class="btn btn-sm btn-outline-secondary" id="btn-import-json">
             <i class="bi bi-upload"></i> Import JSON (Admin)
           </button>
-
           <button class="btn btn-sm btn-outline-secondary" id="btn-export-json">
             <i class="bi bi-download"></i> Export JSON (Admin)
           </button>
-
           <input type="file" id="import-json-input" accept="application/json" hidden />
         </div>
       </div>
@@ -780,7 +722,7 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h6>By Status (Visible Handovers)</h6>
-            <p class="text-muted mb-2">For Admin/Supervisor: all handovers. For others: own/assigned/receiver.</p>
+            <p class="text-muted mb-2">Admin/Supervisor see all; others see only their visible handovers.</p>
             <canvas id="reports-status-chart" height="220"></canvas>
           </div>
         </div>
@@ -831,7 +773,7 @@
           <div class="mb-2">
             <label class="form-label">Long Description</label>
             <textarea class="form-control" id="handover-long-desc" rows="3"
-              placeholder="Optional detailed notes about this handover (reason, transport, additional comments)"></textarea>
+              placeholder="Optional detailed notes (reason, transport, additional comments)"></textarea>
           </div>
 
           <div class="mb-2">
@@ -859,17 +801,20 @@
             <input type="date" class="form-control" id="handover-date" required />
           </div>
 
-          <!-- ✅ Action By (compact in table, full in tooltip) + user can include his name or not -->
           <div class="mb-2">
             <label class="form-label">Action By</label>
 
+            <!-- User can decide to include their own name or not -->
             <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" id="include-my-name" />
-              <label class="form-check-label" for="include-my-name">Include my name in Action By</label>
+              <input class="form-check-input" type="checkbox" id="include-my-name" checked>
+              <label class="form-check-label" for="include-my-name">
+                Include my name in Action By
+              </label>
             </div>
 
-            <select class="form-select" id="handover-action-by" multiple></select>
+            <select class="form-select" id="handover-action-by" multiple required></select>
             <div class="form-text">Hold Ctrl (Windows) / Cmd (Mac) to select multiple employees.</div>
+            <div class="form-text text-muted">Only the creator or Admin can edit Action By later.</div>
           </div>
 
           <div class="mb-2">
@@ -877,10 +822,10 @@
             <div id="current-attachment-info" class="small text-muted mb-1">No attachment</div>
             <input type="file" class="form-control" id="handover-attachment" />
             <div class="form-text">
-              You can attach any file (image, PDF, Word, Excel, etc.).
-              Note: very large files may not be saved due to browser storage limits.
+              You can attach any file. Large files may not be saved due to browser storage limits.
             </div>
           </div>
+
         </div>
 
         <div class="modal-footer">
@@ -901,20 +846,24 @@
           <h5 class="modal-title">Edit User</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+
         <div class="modal-body">
           <div class="mb-2">
             <label class="form-label">Name</label>
             <input type="text" id="edit-user-name" class="form-control" required />
           </div>
+
           <div class="mb-2">
             <label class="form-label">Role</label>
             <input type="text" id="edit-user-role" class="form-control" />
           </div>
+
           <div class="mb-2">
             <label class="form-label">Email</label>
             <input type="email" id="edit-user-email" class="form-control" />
           </div>
         </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save changes</button>
@@ -933,15 +882,18 @@
           <h5 class="modal-title">User Account</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+
         <div class="modal-body">
           <div class="mb-2">
             <label class="form-label">Username</label>
             <input type="text" id="account-username" class="form-control" required />
           </div>
+
           <div class="mb-2">
             <label class="form-label">Linked Employee (optional)</label>
             <select id="account-employee" class="form-select"></select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Role</label>
             <select id="account-role" class="form-select">
@@ -951,6 +903,7 @@
               <option>Viewer</option>
             </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Status</label>
             <select id="account-status" class="form-select">
@@ -958,16 +911,19 @@
               <option value="Disabled">Disabled</option>
             </select>
           </div>
+
           <div class="mb-2">
             <label class="form-label">Password (Admin only)</label>
             <input type="password" id="account-password" class="form-control" placeholder="Leave blank to keep current password" />
-            <div class="form-text">Only Admin can set or change passwords for user accounts.</div>
+            <div class="form-text">Only Admin can set or change passwords.</div>
           </div>
+
           <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
             Passwords are stored only in this browser (prototype).
             Exported JSON does not include passwords for safety.
           </div>
         </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save account</button>
@@ -982,6 +938,8 @@
 
 <script>
   const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
+
+  // Storage key for the global serial counter
   const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
 
   function loadIdCounter() {
@@ -989,15 +947,11 @@
       const stored = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
       const num = parseInt(stored, 10);
       return isNaN(num) ? 0 : num;
-    } catch (e) {
-      return 0;
-    }
+    } catch (e) { return 0; }
   }
 
   function saveIdCounter(last) {
-    try {
-      localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0));
-    } catch (e) {}
+    try { localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0)); } catch (e) {}
   }
 
   function normalizeIdsForList(list, lastSerial) {
@@ -1006,19 +960,15 @@
 
     list.forEach(h => {
       if (!h) return;
-
       let yy, mm;
       const dateStr = h.date || "";
       const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
-      if (m) {
-        yy = m[1].slice(-2);
-        mm = m[2];
-      } else {
+      if (m) { yy = m[1].slice(-2); mm = m[2]; }
+      else {
         const today = new Date();
         yy = String(today.getFullYear()).slice(-2);
         mm = String(today.getMonth() + 1).padStart(2, "0");
       }
-
       counter += 1;
       const serial = String(counter).padStart(4, "0");
       h.id = `HNDR-${yy}-${mm}-${serial}`;
@@ -1029,10 +979,7 @@
 
   function resequenceAllHandoverIdsFromOne() {
     const all = [...handovers, ...deletedHandovers];
-    if (all.length === 0) {
-      saveIdCounter(0);
-      return;
-    }
+    if (all.length === 0) { saveIdCounter(0); return; }
 
     all.sort((a, b) => {
       const da = a.date || "";
@@ -1046,9 +993,14 @@
     saveIdCounter(lastSerial);
   }
 
+  /* =========================
+     Default Data
+  ========================= */
   const defaultUsers = [
     { name: "Sameer Jabbar", role: "Manager", email: "sameer_jabbar@yahoo.com" },
     { name: "Ardasher A. Ahmad", role: "Supervisor", email: "" },
+    { name: "Diyar", role: "User", email: "" },
+    { name: "Darya Ezzalddin Kareem", role: "User", email: "" }
   ];
 
   const defaultHandovers = [
@@ -1062,38 +1014,18 @@
       status: "Pending",
       date: "2025-09-20",
       actionBy: ["Sameer Jabbar"],
-      createdBy: "Sameer Jabbar",          // ✅ NEW
+      createdBy: "Sameer Jabbar",
       attachmentName: null,
       attachmentType: null,
       attachmentSize: null,
       attachmentDataUrl: null,
-    },
-    {
-      id: "HNDR-25-09-0002",
-      from: "Ardasher A. Ahmad",
-      to: "Sameer Jabbar",
-      items: "80 pallets of Product B",
-      longDescription: "",
-      priority: "P2",
-      status: "In Progress",
-      date: "2025-09-21",
-      actionBy: ["Ardasher A. Ahmad"],
-      createdBy: "Ardasher A. Ahmad",      // ✅ NEW
-      attachmentName: null,
-      attachmentType: null,
-      attachmentSize: null,
-      attachmentDataUrl: null,
-    },
+    }
   ];
 
   const defaultAccounts = [
-    {
-      username: "Admin",
-      employeeName: "Sameer Jabbar",
-      role: "Admin",
-      status: "Active",
-      password: "1234",
-    },
+    { username: "Admin", employeeName: "Sameer Jabbar", role: "Admin", status: "Active", password: "1234" },
+    { username: "Diyar", employeeName: "Diyar", role: "User", status: "Active", password: "1234" },
+    { username: "Darya", employeeName: "Darya Ezzalddin Kareem", role: "User", status: "Active", password: "1234" }
   ];
 
   let handovers = [];
@@ -1118,16 +1050,16 @@
       inputStatus, inputDate, inputActionBy,
       attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
 
-  let includeMyNameCheckbox; // ✅ NEW
+  let includeMyNameCheckbox = null;
 
   let accountModal, accountForm;
   let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect, accountPasswordInput;
   let isEditAccount = false;
   let editingAccountIndex = null;
 
-  let activeAccountUsername = null;
-
-  // ===== Helpers =====
+  /* =========================
+     Action By Helpers
+  ========================= */
   function getActionByArray(h) {
     const v = h ? h.actionBy : null;
     if (Array.isArray(v)) return v.map(x => String(x || "").trim()).filter(Boolean);
@@ -1135,8 +1067,17 @@
     return s ? [s] : [];
   }
 
-  function getActionByDisplay(h) {
-    return getActionByArray(h).join(", ");
+  function uniqueNames(arr) {
+    const out = [];
+    const set = new Set();
+    (arr || []).forEach(x => {
+      const v = String(x || "").trim();
+      if (!v) return;
+      if (set.has(v)) return;
+      set.add(v);
+      out.push(v);
+    });
+    return out;
   }
 
   function isUserAssigned(h, empName) {
@@ -1145,118 +1086,95 @@
     return getActionByArray(h).includes(name);
   }
 
+  function isCreator(h, empName) {
+    const name = (empName || "").trim();
+    if (!name) return false;
+    return String(h?.createdBy || "").trim() === name;
+  }
+
   function setMultiSelectValues(selectEl, values) {
     if (!selectEl) return;
     const set = new Set((values || []).map(v => String(v || "").trim()).filter(Boolean));
-    Array.from(selectEl.options).forEach(opt => {
-      opt.selected = set.has(opt.value);
-    });
+    Array.from(selectEl.options).forEach(opt => { opt.selected = set.has(opt.value); });
   }
 
-  // ✅ Compact Action By text:
-  // - Shows first name + "+N" (if more)
-  // - Full list appears on hover (title tooltip)
-  function getCompactNames(namesArr) {
-    const names = (namesArr || []).filter(Boolean);
-    if (names.length === 0) return { text: "-", full: "" };
-    if (names.length === 1) return { text: names[0], full: names[0] };
-    return { text: `${names[0]} +${names.length - 1}`, full: names.join(", ") };
-  }
-
+  /* =========================
+     Storage Load/Save
+  ========================= */
   function loadUsers() {
     const saved = localStorage.getItem("warehouseUsers");
-    if (saved) {
-      try { users = JSON.parse(saved); } catch { users = [...defaultUsers]; }
-    } else users = [...defaultUsers];
+    if (saved) { try { users = JSON.parse(saved); } catch { users = [...defaultUsers]; } }
+    else users = [...defaultUsers];
   }
-
-  function saveUsers() {
-    localStorage.setItem("warehouseUsers", JSON.stringify(users));
-  }
+  function saveUsers() { localStorage.setItem("warehouseUsers", JSON.stringify(users)); }
 
   function loadHandovers() {
     const saved = localStorage.getItem("warehouseHandovers");
-    if (saved) {
-      try { handovers = JSON.parse(saved); } catch { handovers = [...defaultHandovers]; }
-    } else handovers = [...defaultHandovers];
+    if (saved) { try { handovers = JSON.parse(saved); } catch { handovers = [...defaultHandovers]; } }
+    else handovers = [...defaultHandovers];
 
-    // ✅ Backward compatibility: ensure createdBy exists
+    // Backward compatibility
     handovers.forEach(h => {
-      if (!h.createdBy) h.createdBy = h.from || "";
-      if (!Array.isArray(h.actionBy)) h.actionBy = getActionByArray(h);
+      if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
+      if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
+      if (!Array.isArray(h.actionBy)) h.actionBy = [];
     });
 
     filteredHandovers = [...handovers];
   }
-
-  function saveHandovers() {
-    localStorage.setItem("warehouseHandovers", JSON.stringify(handovers));
-  }
+  function saveHandovers() { localStorage.setItem("warehouseHandovers", JSON.stringify(handovers)); }
 
   function loadDeletedHandovers() {
     const saved = localStorage.getItem("warehouseDeletedHandovers");
-    if (saved) {
-      try { deletedHandovers = JSON.parse(saved); } catch { deletedHandovers = []; }
-    } else deletedHandovers = [];
+    if (saved) { try { deletedHandovers = JSON.parse(saved); } catch { deletedHandovers = []; } }
+    else deletedHandovers = [];
 
     deletedHandovers.forEach(h => {
-      if (!h.createdBy) h.createdBy = h.from || "";
-      if (!Array.isArray(h.actionBy)) h.actionBy = getActionByArray(h);
+      if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
+      if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
+      if (!Array.isArray(h.actionBy)) h.actionBy = [];
     });
   }
-
-  function saveDeletedHandovers() {
-    localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers));
-  }
+  function saveDeletedHandovers() { localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers)); }
 
   function normalizeAccountsPasswords() {
     accounts.forEach(acc => {
       if (typeof acc.password === "undefined" || acc.password === null) acc.password = "1234";
+      if (typeof acc.status === "undefined" || acc.status === null) acc.status = "Active";
+      if (!acc.role) acc.role = "User";
     });
   }
 
   function loadAccounts() {
     const saved = localStorage.getItem("warehouseAccounts");
-    if (saved) {
-      try { accounts = JSON.parse(saved); } catch { accounts = [...defaultAccounts]; }
-    } else accounts = [...defaultAccounts];
+    if (saved) { try { accounts = JSON.parse(saved); } catch { accounts = [...defaultAccounts]; } }
+    else accounts = [...defaultAccounts];
     normalizeAccountsPasswords();
   }
-
   function saveAccounts() {
     normalizeAccountsPasswords();
     localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
   }
 
-  function loadActiveAccount() {
-    activeAccountUsername = localStorage.getItem("warehouseActiveAccountUsername") || "";
-  }
-
-  function saveActiveAccount() {
-    if (activeAccountUsername) localStorage.setItem("warehouseActiveAccountUsername", activeAccountUsername);
-    else localStorage.removeItem("warehouseActiveAccountUsername");
-  }
-
+  /* =========================
+     Login Session
+  ========================= */
   function getLoggedInUsername() {
     return localStorage.getItem("warehouseLoggedInAccountUsername") || "";
   }
-
   function setLoggedInUsername(username) {
     if (username) localStorage.setItem("warehouseLoggedInAccountUsername", username);
     else localStorage.removeItem("warehouseLoggedInAccountUsername");
   }
-
   function getLoggedInAccount() {
     const username = getLoggedInUsername();
     if (!username) return null;
     return accounts.find(acc => acc.username === username) || null;
   }
 
-  // ===== Visibility rules (IMPORTANT FIX) =====
-  // User should see handover if:
-  // - assigned in Action By
-  // - OR createdBy is his name
-  // - OR he is receiver (To)
+  /* =========================
+     Visibility & Permissions
+  ========================= */
   function getVisibleHandovers() {
     const acc = getLoggedInAccount();
     if (!acc) return [];
@@ -1265,10 +1183,15 @@
     const empName = (acc.employeeName || "").trim();
     if (!empName) return [];
 
+    // IMPORTANT:
+    // user sees handovers if:
+    // - assigned in Action By OR
+    // - To == user OR
+    // - Created By == user
     return handovers.filter(h =>
       isUserAssigned(h, empName) ||
-      (String(h.createdBy || "").trim() === empName) ||
-      (String(h.to || "").trim() === empName)
+      (h.to || "").trim() === empName ||
+      isCreator(h, empName)
     );
   }
 
@@ -1281,11 +1204,25 @@
     if (!empName) return false;
 
     if (acc.role === "User") {
-      return isUserAssigned(h, empName) || (String(h.to || "").trim() === empName);
+      return isUserAssigned(h, empName) || (h.to || "").trim() === empName || isCreator(h, empName);
     }
-    return false;
+    return false; // Viewer etc.
   }
 
+  // Only Admin OR Creator can edit Action By
+  function canEditActionBy(h) {
+    const acc = getLoggedInAccount();
+    if (!acc) return false;
+    if (acc.role === "Admin") return true;
+
+    const empName = (acc.employeeName || "").trim();
+    if (!empName) return false;
+    return isCreator(h, empName);
+  }
+
+  /* =========================
+     ID & Status
+  ========================= */
   function generateNextId() {
     const today = new Date();
     const year = String(today.getFullYear()).slice(-2);
@@ -1310,25 +1247,132 @@
     }
   }
 
-  // ===== Table Rendering =====
-  function renderActionByCell(h, empName) {
-    const actionNames = getActionByArray(h);
-    const compact = getCompactNames(actionNames);
-    const isAssignedToUser = isUserAssigned(h, empName);
-    const isCreatedByMe = (String(h.createdBy || "").trim() === (empName || "").trim());
-
-    // full list on hover (title)
-    const fullTitle = compact.full || "";
-
-    return `
-      <div class="action-by-wrap" title="${fullTitle.replace(/"/g, "&quot;")}">
-        <span class="action-by-text">${compact.text}</span>
-        ${isAssignedToUser ? `<span class="badge bg-primary-subtle text-primary">Assigned</span>` : ``}
-        ${isCreatedByMe ? `<span class="badge bg-secondary-subtle text-secondary">Created</span>` : ``}
-      </div>
-    `;
+  /* =========================
+     UI Helpers
+  ========================= */
+  function setSelectOptions(select, values, includeEmpty, emptyLabel) {
+    const current = select.value;
+    select.innerHTML = "";
+    if (includeEmpty) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = emptyLabel || "All";
+      select.appendChild(opt);
+    }
+    values.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+    if (current && values.includes(current)) select.value = current;
   }
 
+  function refreshUserSelectOptions() {
+    const names = users.map(u => u.name);
+
+    setSelectOptions(document.getElementById("filter-from"), names, true, "All");
+    setSelectOptions(document.getElementById("filter-to"), names, true, "All");
+
+    if (inputTo && inputActionBy) {
+      setSelectOptions(inputTo, names, false);
+      setSelectOptions(inputActionBy, names, false);
+    }
+
+    fillAccountEmployeeOptions();
+  }
+
+  // From (new handover) limited to logged-in employee, if linked
+  function setupFromForNewHandover() {
+    if (!inputFrom) return;
+
+    const acc = getLoggedInAccount();
+    const linkedName = (acc?.employeeName || "").trim();
+
+    inputFrom.innerHTML = "";
+
+    if (linkedName) {
+      const opt = document.createElement("option");
+      opt.value = linkedName;
+      opt.textContent = linkedName;
+      inputFrom.appendChild(opt);
+      inputFrom.value = linkedName;
+      inputFrom.setAttribute("disabled", "disabled");
+      return;
+    }
+
+    // If no linked employee name (rare), allow select
+    const names = users.map(u => u.name);
+    setSelectOptions(inputFrom, names, false);
+    if (names.length > 0) inputFrom.value = names[0];
+    inputFrom.removeAttribute("disabled");
+  }
+
+  function showLoginPage() {
+    document.getElementById("login-page").style.display = "flex";
+    document.getElementById("app-shell").style.display = "none";
+  }
+
+  function showApp() {
+    document.getElementById("login-page").style.display = "none";
+    document.getElementById("app-shell").style.display = "flex";
+    updateCurrentUserLabel();
+    updateTopbarUser();
+  }
+
+  function updateCurrentUserLabel() {
+    const label = document.getElementById("current-user-label");
+    const acc = getLoggedInAccount();
+    if (!acc) label.textContent = "Not logged in";
+    else label.textContent = `Logged in as: ${acc.username} (${acc.role || "User"})`;
+  }
+
+  function updateTopbarUser() {
+    const el = document.getElementById("topbar-user");
+    const acc = getLoggedInAccount();
+    if (!el) return;
+    if (!acc) { el.textContent = "Not logged in"; return; }
+    el.textContent = `${acc.username} (${acc.role || "User"})`;
+  }
+
+  /* =========================
+     Action By Compact Renderer
+  ========================= */
+  function renderActionByBadges(h, empName) {
+    const names = uniqueNames(getActionByArray(h));
+    const maxShow = 2;
+    const visible = names.slice(0, maxShow);
+    const remaining = names.length - visible.length;
+
+    const assignedToUser = isUserAssigned(h, empName);
+    const createdByUser = isCreator(h, empName);
+
+    const tooltipAll = names.join(", ");
+
+    let html = `<span class="actionby-badges" title="${tooltipAll.replace(/"/g, "&quot;")}">`;
+
+    visible.forEach(n => {
+      html += `<span class="badge text-bg-light border" title="${n.replace(/"/g, "&quot;")}">${n}</span>`;
+    });
+
+    if (remaining > 0) {
+      html += `<span class="badge text-bg-secondary" title="${tooltipAll.replace(/"/g, "&quot;")}">+${remaining}</span>`;
+    }
+
+    if (assignedToUser) {
+      html += `<span class="badge bg-primary-subtle text-primary" title="Assigned to you">Assigned</span>`;
+    }
+    if (createdByUser) {
+      html += `<span class="badge bg-secondary-subtle text-secondary" title="Created by you">Created</span>`;
+    }
+
+    html += `</span>`;
+    return html;
+  }
+
+  /* =========================
+     Tables
+  ========================= */
   function renderTable() {
     const tbody = document.getElementById("handover-tbody");
     tbody.innerHTML = "";
@@ -1346,6 +1390,7 @@
           <i class="bi bi-eye"></i>
         </button>
       `;
+
       if (canEdit) {
         actionsHtml += `
           <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
@@ -1353,6 +1398,7 @@
           </button>
         `;
       }
+
       if (isAdmin) {
         actionsHtml += `
           <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
@@ -1364,20 +1410,20 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
+        <td>${h.from || ""}</td>
+        <td>${h.to || ""}</td>
+        <td>${h.items || ""}</td>
         <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td class="action-by-cell">${renderActionByCell(h, empName)}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status || ""}</span></td>
+        <td>${h.date || ""}</td>
+        <td class="actionby-cell">${renderActionByBadges(h, empName)}</td>
         <td>
           ${
             linkUrl
               ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     download="${h.attachmentName || "attachment"}">
-                   <i class="bi bi-paperclip"></i>
+                    title="${(h.attachmentName || "Attachment").replace(/"/g, "&quot;")}"
+                    download="${(h.attachmentName || "attachment").replace(/"/g, "&quot;")}">
+                  <i class="bi bi-paperclip"></i>
                  </a>`
               : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
           }
@@ -1401,6 +1447,7 @@
     if (!tbody) return;
 
     tbody.innerHTML = "";
+
     const base = getVisibleHandovers();
     const completed = base.filter(h => h.status === "Completed");
 
@@ -1416,6 +1463,7 @@
           <i class="bi bi-eye"></i>
         </button>
       `;
+
       if (isAdmin) {
         actionsHtml += `
           <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
@@ -1427,20 +1475,20 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
+        <td>${h.from || ""}</td>
+        <td>${h.to || ""}</td>
+        <td>${h.items || ""}</td>
         <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td class="action-by-cell">${renderActionByCell(h, empName)}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status || ""}</span></td>
+        <td>${h.date || ""}</td>
+        <td class="actionby-cell">${renderActionByBadges(h, empName)}</td>
         <td>
           ${
             linkUrl
               ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     download="${h.attachmentName || "attachment"}">
-                   <i class="bi bi-paperclip"></i>
+                    title="${(h.attachmentName || "Attachment").replace(/"/g, "&quot;")}"
+                    download="${(h.attachmentName || "attachment").replace(/"/g, "&quot;")}">
+                  <i class="bi bi-paperclip"></i>
                  </a>`
               : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
           }
@@ -1459,6 +1507,7 @@
     if (!tbody) return;
 
     tbody.innerHTML = "";
+
     const acc = getLoggedInAccount();
     const empName = (acc?.employeeName || "").trim();
     const isAdmin = acc && acc.role === "Admin";
@@ -1478,20 +1527,20 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from}</td>
-        <td>${h.to}</td>
-        <td>${h.items}</td>
+        <td>${h.from || ""}</td>
+        <td>${h.to || ""}</td>
+        <td>${h.items || ""}</td>
         <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status}</span></td>
-        <td>${h.date}</td>
-        <td class="action-by-cell">${renderActionByCell(h, empName)}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status || ""}</span></td>
+        <td>${h.date || ""}</td>
+        <td class="actionby-cell">${renderActionByBadges(h, empName)}</td>
         <td>
           ${
             linkUrl
               ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                     title="${h.attachmentName || "Attachment"}"
-                     download="${h.attachmentName || "attachment"}">
-                   <i class="bi bi-paperclip"></i>
+                    title="${(h.attachmentName || "Attachment").replace(/"/g, "&quot;")}"
+                    download="${(h.attachmentName || "attachment").replace(/"/g, "&quot;")}">
+                  <i class="bi bi-paperclip"></i>
                  </a>`
               : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
           }
@@ -1502,12 +1551,16 @@
     });
 
     if (countEl) countEl.textContent = deletedHandovers.length + " records";
+
     attachDeletedRowActions();
   }
 
   function attachRowActions() {
     document.querySelectorAll(".btn-view").forEach(btn => {
-      btn.addEventListener("click", () => openEditHandover(btn.getAttribute("data-id")));
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        openEditHandover(id);
+      });
     });
 
     document.querySelectorAll(".btn-complete").forEach(btn => {
@@ -1581,6 +1634,9 @@
     });
   }
 
+  /* =========================
+     Filters & Stats
+  ========================= */
   function applyFilters() {
     const from = document.getElementById("filter-from").value;
     const to = document.getElementById("filter-to").value;
@@ -1594,15 +1650,16 @@
 
     filteredHandovers = base.filter(h => {
       let ok = true;
-      if (from && h.from !== from) ok = false;
-      if (to && h.to !== to) ok = false;
-      if (status && h.status !== status) ok = false;
-      if (priority && h.priority !== priority) ok = false;
-      if (dateFrom && h.date < dateFrom) ok = false;
-      if (dateTo && h.date > dateTo) ok = false;
+      if (from && (h.from || "") !== from) ok = false;
+      if (to && (h.to || "") !== to) ok = false;
+      if (status && (h.status || "") !== status) ok = false;
+      if (priority && (h.priority || "") !== priority) ok = false;
+
+      if (dateFrom && (h.date || "") < dateFrom) ok = false;
+      if (dateTo && (h.date || "") > dateTo) ok = false;
 
       if (search) {
-        const text = (h.id + " " + h.items + " " + h.from + " " + h.to).toLowerCase();
+        const text = ((h.id||"") + " " + (h.items||"") + " " + (h.from||"") + " " + (h.to||"")).toLowerCase();
         if (!text.includes(search)) ok = false;
       }
       return ok;
@@ -1635,7 +1692,9 @@
     document.getElementById("stat-delayed").textContent = delayed;
   }
 
-  // ===== Reports =====
+  /* =========================
+     Reports
+  ========================= */
   function renderReports() {
     const base = getVisibleHandovers();
 
@@ -1660,18 +1719,25 @@
     if (reportsStatusChart) reportsStatusChart.destroy();
     reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
       type: "bar",
-      data: { labels: ["Pending", "In Progress", "Completed", "Delayed"], datasets: [{ label: "Handovers", data: [pending, inProgress, completed, delayed] }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      data: {
+        labels: ["Pending", "In Progress", "Completed", "Delayed"],
+        datasets: [{ label: "Handovers", data: [pending, inProgress, completed, delayed] }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
     });
 
     const byUser = {};
     base.forEach(h => {
-      const assignees = getActionByArray(h);
+      const assignees = uniqueNames(getActionByArray(h));
       if (assignees.length === 0) {
-        byUser["Unknown"] = (byUser["Unknown"] || 0) + 1;
-      } else {
-        assignees.forEach(name => { byUser[name] = (byUser[name] || 0) + 1; });
+        byUser["(None)"] = (byUser["(None)"] || 0) + 1;
+        return;
       }
+      assignees.forEach(name => { byUser[name] = (byUser[name] || 0) + 1; });
     });
 
     const userLabels = Object.keys(byUser);
@@ -1681,11 +1747,17 @@
     reportsUserChart = new Chart(userCanvas.getContext("2d"), {
       type: "bar",
       data: { labels: userLabels, datasets: [{ label: "Handovers", data: userData }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
     });
   }
 
-  // ===== Excel Export =====
+  /* =========================
+     Excel Export
+  ========================= */
   function exportHandoverExcel() {
     const source = (filteredHandovers && filteredHandovers.length > 0) ? filteredHandovers : getVisibleHandovers();
 
@@ -1698,22 +1770,17 @@
       "Priority": h.priority || "",
       "Status": h.status || "",
       "Date": h.date || "",
+      "Action By": uniqueNames(getActionByArray(h)).join(", "),
       "Created By": h.createdBy || "",
-      "Action By": getActionByDisplay(h) || "",
       "Attachment Name": h.attachmentName || "None",
       "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
     }));
 
-    if (data.length === 0) {
-      alert("No records to export.");
-      return;
-    }
-    if (typeof XLSX === "undefined") {
-      alert("XLSX library is not loaded. Please check the script include.");
-      return;
-    }
+    if (data.length === 0) { alert("No records to export."); return; }
+    if (typeof XLSX === "undefined") { alert("XLSX library is not loaded."); return; }
 
     const ws = XLSX.utils.json_to_sheet(data);
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Handover List");
     XLSX.writeFile(wb, "Handover_List.xlsx");
@@ -1728,309 +1795,19 @@
     });
   }
 
-  function setSelectOptions(select, values, includeEmpty, emptyLabel) {
-    const current = select.value;
-    select.innerHTML = "";
-    if (includeEmpty) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = emptyLabel || "All";
-      select.appendChild(opt);
-    }
-    values.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      select.appendChild(opt);
-    });
-    if (current && values.includes(current)) select.value = current;
-  }
-
-  function refreshUserSelectOptions() {
-    const names = users.map(u => u.name);
-
-    setSelectOptions(document.getElementById("filter-from"), names, true, "All");
-    setSelectOptions(document.getElementById("filter-to"), names, true, "All");
-
-    if (inputTo && inputActionBy) {
-      setSelectOptions(inputTo, names, false);
-      setSelectOptions(inputActionBy, names, false);
-    }
-
-    fillAccountEmployeeOptions();
-  }
-
-  function setupFromForNewHandover() {
-    if (!inputFrom) return;
-    const acc = getLoggedInAccount();
-    const linkedName = acc?.employeeName?.trim();
-
-    inputFrom.innerHTML = "";
-    if (linkedName) {
-      const opt = document.createElement("option");
-      opt.value = linkedName;
-      opt.textContent = linkedName;
-      inputFrom.appendChild(opt);
-      inputFrom.value = linkedName;
-    } else {
-      const names = users.map(u => u.name);
-      setSelectOptions(inputFrom, names, false);
-      if (names.length > 0) inputFrom.value = names[0];
-    }
-
-    inputFrom.setAttribute("disabled", "disabled");
-  }
-
-  function refreshActiveAccountSelect() {
-    const select = document.getElementById("active-account-select");
-    if (!select) return;
-
-    const currentValue = activeAccountUsername || "";
-    select.innerHTML = "";
-
-    const optGuest = document.createElement("option");
-    optGuest.value = "";
-    optGuest.textContent = "Guest (no login)";
-    select.appendChild(optGuest);
-
-    accounts.forEach(acc => {
-      const opt = document.createElement("option");
-      opt.value = acc.username;
-      opt.textContent = `${acc.username} (${acc.role || "User"})`;
-      select.appendChild(opt);
-    });
-
-    select.value = currentValue;
-
-    select.onchange = () => {
-      activeAccountUsername = select.value || "";
-      saveActiveAccount();
-    };
-  }
-
-  function setHandoverFormReadOnly(readOnly) {
-    const fields = [inputTo, inputItems, inputLongDesc, inputPriority, inputStatus, inputDate, inputActionBy, attachmentInput, includeMyNameCheckbox];
-    fields.forEach(el => {
-      if (!el) return;
-      if (readOnly) el.setAttribute("disabled", "disabled");
-      else el.removeAttribute("disabled");
-    });
-
-    if (inputFrom) inputFrom.setAttribute("disabled", "disabled");
-    if (handoverSaveBtn) handoverSaveBtn.style.display = readOnly ? "none" : "inline-block";
-  }
-
-  function initHandoverModal() {
-    const modalEl = document.getElementById("handover-modal");
-    handoverModal = new bootstrap.Modal(modalEl);
-    handoverForm = document.getElementById("handover-form");
-    modalTitleEl = document.getElementById("handover-modal-title");
-
-    inputId = document.getElementById("handover-id");
-    inputFrom = document.getElementById("handover-from");
-    inputTo = document.getElementById("handover-to");
-    inputItems = document.getElementById("handover-items");
-    inputLongDesc = document.getElementById("handover-long-desc");
-    inputPriority = document.getElementById("handover-priority");
-    inputStatus = document.getElementById("handover-status");
-    inputDate = document.getElementById("handover-date");
-    inputActionBy = document.getElementById("handover-action-by");
-    includeMyNameCheckbox = document.getElementById("include-my-name"); // ✅ NEW
-    attachmentInput = document.getElementById("handover-attachment");
-    currentAttachmentInfo = document.getElementById("current-attachment-info");
-    handoverSaveBtn = document.getElementById("handover-save-btn");
-
-    refreshUserSelectOptions();
-
-    const openButtons = [document.getElementById("btn-add-handover"), document.getElementById("btn-add-handover-2")].filter(Boolean);
-
-    openButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc) { alert("You must be logged in to create a handover."); return; }
-        if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-        if (acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
-
-        isEditMode = false;
-        editingId = null;
-        editingReadOnly = false;
-        handoverForm.reset();
-
-        inputId.value = generateNextId();
-        inputDate.value = new Date().toISOString().slice(0, 10);
-        currentAttachmentInfo.textContent = "No attachment";
-        attachmentInput.value = "";
-        inputLongDesc.value = "";
-        inputPriority.value = "P3";
-
-        refreshUserSelectOptions();
-        setupFromForNewHandover();
-
-        if (users.length > 0) inputTo.value = users[0].name;
-
-        // ✅ IMPORTANT: Start with empty Action By (user chooses)
-        includeMyNameCheckbox.checked = false;
-        setMultiSelectValues(inputActionBy, []);
-
-        setHandoverFormReadOnly(false);
-        modalTitleEl.textContent = "New Handover";
-        handoverModal.show();
-      });
-    });
-
-    handoverForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      if (editingReadOnly) return;
-
-      const acc = getLoggedInAccount();
-      if (!acc) { alert("You must be logged in to save."); return; }
-      if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-      if (!isEditMode && acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
-
-      const from = inputFrom.value;
-      const to = inputTo.value;
-      const items = inputItems.value;
-      const longDescription = inputLongDesc.value;
-      const priority = inputPriority.value;
-      const status = inputStatus.value;
-      const date = inputDate.value;
-
-      // ✅ Selected employees only
-      let actionBy = Array.from(inputActionBy.selectedOptions).map(o => o.value).map(s => s.trim()).filter(Boolean);
-
-      // ✅ If checkbox checked, add my name (but do NOT force it otherwise)
-      const myName = (acc.employeeName || "").trim();
-      if (myName && includeMyNameCheckbox?.checked) {
-        if (!actionBy.includes(myName)) actionBy.push(myName);
-      }
-
-      // ✅ Make sure user selected at least one Action By OR checkbox adds his name
-      if (!actionBy || actionBy.length === 0) {
-        alert("Please select at least one employee in Action By (or check 'Include my name').");
-        return;
-      }
-
-      const file = attachmentInput.files[0] || null;
-
-      let attachmentName = null;
-      let attachmentType = null;
-      let attachmentSize = null;
-      let attachmentDataUrl = null;
-
-      if (isEditMode) {
-        const current = handovers.find(h => h.id === editingId);
-        if (current) {
-          if (!canEditHandover(current)) { alert("You are not allowed to edit this handover."); return; }
-          attachmentName = current.attachmentName || null;
-          attachmentType = current.attachmentType || null;
-          attachmentSize = current.attachmentSize || null;
-          attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
-        }
-      }
-
-      if (file) {
-        if (file.size > MAX_ATTACHMENT_SIZE) {
-          alert("Attachment is too large to save in the browser (max ~3MB). Please attach a smaller file.");
-          return;
-        }
-        attachmentName = file.name;
-        attachmentType = file.type || null;
-        attachmentSize = file.size;
-        attachmentDataUrl = await readFileAsDataUrl(file);
-      }
-
-      // ✅ Creator name is saved always (so creator sees it in his list)
-      const createdBy = myName || from || "";
-
-      if (isEditMode) {
-        const idx = handovers.findIndex(h => h.id === editingId);
-        if (idx === -1) return;
-
-        handovers[idx] = {
-          ...handovers[idx],
-          from, to, items, longDescription, priority, status, date,
-          actionBy,
-          createdBy: handovers[idx].createdBy || createdBy,
-          attachmentName, attachmentType, attachmentSize, attachmentDataUrl,
-        };
-      } else {
-        const id = inputId.value;
-        handovers.push({
-          id, from, to, items, longDescription, priority, status, date,
-          actionBy,
-          createdBy,
-          attachmentName, attachmentType, attachmentSize, attachmentDataUrl,
-        });
-      }
-
-      saveHandovers();
-      filteredHandovers = getVisibleHandovers(); // ✅ ensure creator sees new record
-      applyFilters();
-      handoverModal.hide();
-      attachmentInput.value = "";
-    });
-  }
-
-  function openEditHandover(id) {
-    const h = handovers.find(x => x.id === id);
-    if (!h) return;
-
-    isEditMode = true;
-    editingId = id;
-
-    handoverForm.reset();
-    refreshUserSelectOptions();
-
-    const fromName = h.from || "";
-    if (inputFrom) {
-      inputFrom.innerHTML = "";
-      const opt = document.createElement("option");
-      opt.value = fromName;
-      opt.textContent = fromName;
-      inputFrom.appendChild(opt);
-      inputFrom.value = fromName;
-      inputFrom.setAttribute("disabled", "disabled");
-    }
-
-    inputId.value = h.id;
-    inputTo.value = h.to;
-    inputItems.value = h.items;
-    inputLongDesc.value = h.longDescription || "";
-    inputPriority.value = h.priority || "P3";
-    inputStatus.value = h.status;
-    inputDate.value = h.date;
-
-    // ✅ Load selected Action By
-    setMultiSelectValues(inputActionBy, getActionByArray(h));
-
-    // ✅ Checkbox reflects whether my name is inside Action By
-    const acc = getLoggedInAccount();
-    const myName = (acc?.employeeName || "").trim();
-    if (includeMyNameCheckbox) includeMyNameCheckbox.checked = !!(myName && isUserAssigned(h, myName));
-
-    attachmentInput.value = "";
-    if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
-      currentAttachmentInfo.textContent =
-        "Current attachment: " + h.attachmentName +
-        (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
-    } else currentAttachmentInfo.textContent = "No attachment";
-
-    const editable = canEditHandover(h);
-    editingReadOnly = !editable;
-    setHandoverFormReadOnly(!editable);
-
-    modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
-    handoverModal.show();
-  }
-
-  // ===== Sidebar Navigation =====
+  /* =========================
+     Sidebar Navigation (Admin Pages)
+  ========================= */
   function setActiveView(view, save = true) {
     const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
     const views = document.querySelectorAll(".view-section");
 
     if (view === "admin-users" || view === "deleted-handovers") {
       const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can access this page."); return; }
+      if (!acc || acc.role !== "Admin") {
+        alert("Only Admin can access this page.");
+        return;
+      }
     }
 
     navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("data-view") === view));
@@ -2050,10 +1827,13 @@
     });
   }
 
-  // ===== Employees =====
+  /* =========================
+     Employees (Users)
+  ========================= */
   function renderUsers() {
     const tbody = document.getElementById("users-tbody");
     tbody.innerHTML = "";
+
     users.forEach((u, index) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -2069,8 +1849,12 @@
       `;
       tbody.appendChild(tr);
     });
+
     document.querySelectorAll(".btn-edit-user").forEach(btn => {
-      btn.addEventListener("click", () => openEditUser(parseInt(btn.getAttribute("data-index"), 10)));
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-index"), 10);
+        openEditUser(idx);
+      });
     });
   }
 
@@ -2086,17 +1870,20 @@
       const role = roleInput.value.trim();
       const email = emailInput.value.trim();
       if (!name) return;
+
       users.push({ name, role, email });
       saveUsers();
       renderUsers();
       refreshUserSelectOptions();
-      nameInput.value = ""; roleInput.value = ""; emailInput.value = "";
+
+      nameInput.value = "";
+      roleInput.value = "";
+      emailInput.value = "";
     });
   }
 
   function initUserModal() {
-    const modalEl = document.getElementById("user-modal");
-    userModal = new bootstrap.Modal(modalEl);
+    userModal = new bootstrap.Modal(document.getElementById("user-modal"));
     userEditForm = document.getElementById("user-edit-form");
     editUserNameInput = document.getElementById("edit-user-name");
     editUserRoleInput = document.getElementById("edit-user-role");
@@ -2109,6 +1896,7 @@
       const role = editUserRoleInput.value.trim();
       const email = editUserEmailInput.value.trim();
       if (!name) return;
+
       users[editingUserIndex] = { name, role, email };
       saveUsers();
       renderUsers();
@@ -2121,36 +1909,26 @@
     const u = users[index];
     if (!u) return;
     editingUserIndex = index;
+
     editUserNameInput.value = u.name;
     editUserRoleInput.value = u.role || "";
     editUserEmailInput.value = u.email || "";
     userModal.show();
   }
 
-  // ===== Admin Accounts =====
-  function fillAccountEmployeeOptions() {
-    if (!accountEmployeeSelect) return;
-    accountEmployeeSelect.innerHTML = "";
-    const optNone = document.createElement("option");
-    optNone.value = "";
-    optNone.textContent = "(No linked employee)";
-    accountEmployeeSelect.appendChild(optNone);
-
-    users.forEach(u => {
-      const opt = document.createElement("option");
-      opt.value = u.name;
-      opt.textContent = u.name;
-      accountEmployeeSelect.appendChild(opt);
-    });
-  }
-
+  /* =========================
+     Admin Accounts
+  ========================= */
   function renderAccounts() {
     const tbody = document.getElementById("accounts-tbody");
     if (!tbody) return;
-    tbody.innerHTML = "";
 
+    tbody.innerHTML = "";
     accounts.forEach((acc, index) => {
-      const badgeClass = acc.status === "Disabled" ? "bg-secondary-subtle text-secondary" : "bg-success-subtle text-success";
+      const badgeClass = acc.status === "Disabled"
+        ? "bg-secondary-subtle text-secondary"
+        : "bg-success-subtle text-success";
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${index + 1}</td>
@@ -2179,29 +1957,42 @@
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         const acc = accounts[idx];
         if (!acc) return;
-        if (!confirm(`Are you sure you want to delete account "${acc.username}"?`)) return;
+
+        const ok = confirm(`Are you sure you want to delete account "${acc.username}"?`);
+        if (!ok) return;
 
         accounts.splice(idx, 1);
         saveAccounts();
         renderAccounts();
-        refreshActiveAccountSelect();
 
         if (acc.username === getLoggedInUsername()) {
           setLoggedInUsername("");
-          activeAccountUsername = "";
-          saveActiveAccount();
           showLoginPage();
           updateCurrentUserLabel();
         }
       });
     });
+  }
 
-    refreshActiveAccountSelect();
+  function fillAccountEmployeeOptions() {
+    if (!accountEmployeeSelect) return;
+    accountEmployeeSelect.innerHTML = "";
+
+    const optNone = document.createElement("option");
+    optNone.value = "";
+    optNone.textContent = "(No linked employee)";
+    accountEmployeeSelect.appendChild(optNone);
+
+    users.forEach(u => {
+      const opt = document.createElement("option");
+      opt.value = u.name;
+      opt.textContent = u.name;
+      accountEmployeeSelect.appendChild(opt);
+    });
   }
 
   function initAccountModal() {
-    const modalEl = document.getElementById("account-modal");
-    accountModal = new bootstrap.Modal(modalEl);
+    accountModal = new bootstrap.Modal(document.getElementById("account-modal"));
     accountForm = document.getElementById("account-form");
     accountUsernameInput = document.getElementById("account-username");
     accountEmployeeSelect = document.getElementById("account-employee");
@@ -2228,6 +2019,7 @@
 
     accountForm.addEventListener("submit", e => {
       e.preventDefault();
+
       const accLogged = getLoggedInAccount();
       if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
 
@@ -2236,13 +2028,17 @@
       const role = accountRoleSelect.value || "User";
       const status = accountStatusSelect.value || "Active";
       const rawPassword = (accountPasswordInput.value || "").trim();
+
       if (!username) return;
 
       if (isEditAccount && editingAccountIndex !== null) {
         const existing = accounts[editingAccountIndex];
         accounts[editingAccountIndex] = {
           ...existing,
-          username, employeeName, role, status,
+          username,
+          employeeName,
+          role,
+          status,
           password: rawPassword ? rawPassword : existing.password,
         };
       } else {
@@ -2252,7 +2048,6 @@
 
       saveAccounts();
       renderAccounts();
-      refreshActiveAccountSelect();
       accountPasswordInput.value = "";
       accountModal.hide();
     });
@@ -2267,6 +2062,7 @@
 
     isEditAccount = true;
     editingAccountIndex = index;
+
     fillAccountEmployeeOptions();
     accountUsernameInput.value = acc.username;
     accountEmployeeSelect.value = acc.employeeName || "";
@@ -2276,7 +2072,304 @@
     accountModal.show();
   }
 
-  // ===== Resequence button (Admin only) =====
+  /* =========================
+     Handover Modal (Field-level Permissions)
+  ========================= */
+  function setHandoverFormPermissions(h) {
+    // default enable/disable for edit vs view is based on canEditHandover
+    const canEdit = h ? canEditHandover(h) : true;
+
+    const fieldsGeneral = [inputTo, inputItems, inputLongDesc, inputPriority, inputStatus, inputDate, attachmentInput];
+    fieldsGeneral.forEach(el => {
+      if (!el) return;
+      if (!canEdit) el.setAttribute("disabled", "disabled");
+      else el.removeAttribute("disabled");
+    });
+
+    if (inputFrom) inputFrom.setAttribute("disabled", "disabled");
+
+    // ActionBy: only Admin or Creator
+    const allowActionBy = h ? canEditActionBy(h) : true;
+
+    if (inputActionBy) {
+      if (!canEdit || !allowActionBy) inputActionBy.setAttribute("disabled", "disabled");
+      else inputActionBy.removeAttribute("disabled");
+    }
+
+    if (includeMyNameCheckbox) {
+      if (!canEdit || !allowActionBy) includeMyNameCheckbox.setAttribute("disabled", "disabled");
+      else includeMyNameCheckbox.removeAttribute("disabled");
+    }
+
+    if (handoverSaveBtn) handoverSaveBtn.style.display = canEdit ? "inline-block" : "none";
+  }
+
+  function initHandoverModal() {
+    handoverModal = new bootstrap.Modal(document.getElementById("handover-modal"));
+    handoverForm = document.getElementById("handover-form");
+    modalTitleEl = document.getElementById("handover-modal-title");
+
+    inputId = document.getElementById("handover-id");
+    inputFrom = document.getElementById("handover-from");
+    inputTo = document.getElementById("handover-to");
+    inputItems = document.getElementById("handover-items");
+    inputLongDesc = document.getElementById("handover-long-desc");
+    inputPriority = document.getElementById("handover-priority");
+    inputStatus = document.getElementById("handover-status");
+    inputDate = document.getElementById("handover-date");
+    inputActionBy = document.getElementById("handover-action-by");
+    attachmentInput = document.getElementById("handover-attachment");
+    currentAttachmentInfo = document.getElementById("current-attachment-info");
+    handoverSaveBtn = document.getElementById("handover-save-btn");
+    includeMyNameCheckbox = document.getElementById("include-my-name");
+
+    refreshUserSelectOptions();
+
+    // Checkbox behavior: user can include their name or not
+    includeMyNameCheckbox.addEventListener("change", () => {
+      const acc = getLoggedInAccount();
+      const myName = (acc?.employeeName || "").trim();
+      if (!myName) return;
+
+      const selected = Array.from(inputActionBy.selectedOptions).map(o => o.value);
+      const set = new Set(selected);
+
+      if (includeMyNameCheckbox.checked) set.add(myName);
+      else set.delete(myName);
+
+      setMultiSelectValues(inputActionBy, Array.from(set));
+    });
+
+    const openButtons = [
+      document.getElementById("btn-add-handover"),
+      document.getElementById("btn-add-handover-2"),
+    ].filter(Boolean);
+
+    openButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const acc = getLoggedInAccount();
+        if (!acc) { alert("You must be logged in to create a handover."); return; }
+        if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
+        if (acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
+
+        isEditMode = false;
+        editingId = null;
+        editingReadOnly = false;
+
+        handoverForm.reset();
+
+        inputId.value = generateNextId();
+        inputDate.value = new Date().toISOString().slice(0, 10);
+        currentAttachmentInfo.textContent = "No attachment";
+        attachmentInput.value = "";
+        inputLongDesc.value = "";
+        inputPriority.value = "P3";
+        inputStatus.value = "Pending";
+
+        refreshUserSelectOptions();
+        setupFromForNewHandover();
+
+        if (users.length > 0) inputTo.value = users[0].name;
+
+        // Action By defaults:
+        // - user can include their name or not (checkbox)
+        includeMyNameCheckbox.checked = true;
+
+        const myName = (acc.employeeName || "").trim();
+        if (myName) setMultiSelectValues(inputActionBy, [myName]);
+        else if (users.length > 0) setMultiSelectValues(inputActionBy, [users[0].name]);
+
+        setHandoverFormPermissions(null);
+        modalTitleEl.textContent = "New Handover";
+        handoverModal.show();
+      });
+    });
+
+    handoverForm.addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const acc = getLoggedInAccount();
+      if (!acc) { alert("You must be logged in to save."); return; }
+      if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
+      if (!isEditMode && acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
+
+      const from = inputFrom.value;
+      const to = inputTo.value;
+      const items = inputItems.value;
+      const longDescription = inputLongDesc.value;
+      const priority = inputPriority.value;
+      const status = inputStatus.value;
+      const date = inputDate.value;
+
+      const myName = (acc.employeeName || "").trim();
+
+      // Get selected action by
+      let actionBy = Array.from(inputActionBy.selectedOptions).map(o => o.value);
+      actionBy = uniqueNames(actionBy);
+
+      // Respect checkbox: include my name or not
+      if (myName) {
+        if (includeMyNameCheckbox.checked) {
+          if (!actionBy.includes(myName)) actionBy.push(myName);
+        } else {
+          actionBy = actionBy.filter(x => x !== myName);
+        }
+      }
+
+      if (actionBy.length === 0) {
+        alert("Please select at least one employee in Action By (or enable 'Include my name').");
+        return;
+      }
+
+      const file = attachmentInput.files[0] || null;
+
+      let attachmentName = null;
+      let attachmentType = null;
+      let attachmentSize = null;
+      let attachmentDataUrl = null;
+
+      if (isEditMode) {
+        const current = handovers.find(h => h.id === editingId);
+        if (current) {
+          // retain attachment if not changed
+          attachmentName = current.attachmentName || null;
+          attachmentType = current.attachmentType || null;
+          attachmentSize = current.attachmentSize || null;
+          attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
+        }
+      }
+
+      if (file) {
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+          alert("Attachment is too large to save in the browser (max ~3MB). Please attach a smaller file.");
+          return;
+        }
+        attachmentName = file.name;
+        attachmentType = file.type || null;
+        attachmentSize = file.size;
+        attachmentDataUrl = await readFileAsDataUrl(file);
+      }
+
+      if (isEditMode) {
+        const idx = handovers.findIndex(h => h.id === editingId);
+        if (idx === -1) return;
+
+        const current = handovers[idx];
+
+        if (!canEditHandover(current)) {
+          alert("You are not allowed to edit this handover.");
+          return;
+        }
+
+        // Only Admin or Creator can change Action By
+        const allowActionBy = canEditActionBy(current);
+        const finalActionBy = allowActionBy ? actionBy : uniqueNames(getActionByArray(current));
+
+        handovers[idx] = {
+          ...current,
+          from,
+          to,
+          items,
+          longDescription,
+          priority,
+          status,
+          date,
+          actionBy: finalActionBy,
+          createdBy: current.createdBy || myName || from,
+          attachmentName,
+          attachmentType,
+          attachmentSize,
+          attachmentDataUrl,
+        };
+      } else {
+        const id = inputId.value;
+
+        handovers.push({
+          id,
+          from,
+          to,
+          items,
+          longDescription,
+          priority,
+          status,
+          date,
+          actionBy: uniqueNames(actionBy),
+          createdBy: myName || from,
+          attachmentName,
+          attachmentType,
+          attachmentSize,
+          attachmentDataUrl,
+        });
+      }
+
+      saveHandovers();
+      filteredHandovers = getVisibleHandovers(); // refresh visibility immediately
+      applyFilters();
+      handoverModal.hide();
+      attachmentInput.value = "";
+    });
+  }
+
+  function openEditHandover(id) {
+    const h = handovers.find(x => x.id === id);
+    if (!h) return;
+
+    isEditMode = true;
+    editingId = id;
+
+    handoverForm.reset();
+    refreshUserSelectOptions();
+
+    // From is always fixed to original
+    const fromName = h.from || "";
+    inputFrom.innerHTML = "";
+    if (fromName) {
+      const opt = document.createElement("option");
+      opt.value = fromName;
+      opt.textContent = fromName;
+      inputFrom.appendChild(opt);
+      inputFrom.value = fromName;
+    }
+    inputFrom.setAttribute("disabled", "disabled");
+
+    inputId.value = h.id;
+    inputTo.value = h.to || "";
+    inputItems.value = h.items || "";
+    inputLongDesc.value = h.longDescription || "";
+    inputPriority.value = h.priority || "P3";
+    inputStatus.value = h.status || "Pending";
+    inputDate.value = h.date || "";
+
+    // Set multi-select from existing actionBy
+    const currentActionBy = uniqueNames(getActionByArray(h));
+    setMultiSelectValues(inputActionBy, currentActionBy);
+
+    // Set checkbox state (whether my name is included)
+    const acc = getLoggedInAccount();
+    const myName = (acc?.employeeName || "").trim();
+    includeMyNameCheckbox.checked = myName ? currentActionBy.includes(myName) : true;
+
+    attachmentInput.value = "";
+    if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
+      currentAttachmentInfo.textContent = "Current attachment: " + h.attachmentName +
+        (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
+    } else {
+      currentAttachmentInfo.textContent = "No attachment";
+    }
+
+    const editable = canEditHandover(h);
+    editingReadOnly = !editable;
+
+    // Field-level permissions (ActionBy only Admin/Creator)
+    setHandoverFormPermissions(h);
+
+    modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
+    handoverModal.show();
+  }
+
+  /* =========================
+     Manual resequence (Admin)
+  ========================= */
   function initResequenceButton() {
     const btn = document.getElementById("btn-resequence-ids");
     if (!btn) return;
@@ -2285,7 +2378,7 @@
       const acc = getLoggedInAccount();
       if (!acc || acc.role !== "Admin") { alert("Only Admin can resequence HNDR IDs."); return; }
 
-      const ok = confirm("This will resequence ALL HNDR IDs starting from 0001 based on date (including deleted handovers).\nDo you want to continue?");
+      const ok = confirm("This will resequence ALL HNDR IDs starting from 0001 based on date (including deleted handovers).\nContinue?");
       if (!ok) return;
 
       resequenceAllHandoverIdsFromOne();
@@ -2295,12 +2388,13 @@
       filteredHandovers = getVisibleHandovers();
       renderTable();
       renderDeletedHandovers();
-
       alert("HNDR IDs resequenced successfully.");
     });
   }
 
-  // ===== Login Handling =====
+  /* =========================
+     Login Handling
+  ========================= */
   function validateLogin(username, password) {
     normalizeAccountsPasswords();
     const acc = accounts.find(a => a.username === username);
@@ -2308,32 +2402,6 @@
     if (acc.status === "Disabled") return { ok: false, message: "This account is disabled." };
     if (acc.password !== password) return { ok: false, message: "Invalid username or password." };
     return { ok: true, account: acc };
-  }
-
-  function showLoginPage() {
-    const loginPageEl = document.getElementById("login-page");
-    const appShellEl = document.getElementById("app-shell");
-    if (loginPageEl) loginPageEl.style.display = "flex";
-    if (appShellEl) appShellEl.style.display = "none";
-  }
-
-  function showApp() {
-    const loginPageEl = document.getElementById("login-page");
-    const appShellEl = document.getElementById("app-shell");
-    if (loginPageEl) loginPageEl.style.display = "none";
-    if (appShellEl) appShellEl.style.display = "flex";
-
-    refreshActiveAccountSelect();
-    const select = document.getElementById("active-account-select");
-    if (select && activeAccountUsername) select.value = activeAccountUsername;
-    updateCurrentUserLabel();
-  }
-
-  function updateCurrentUserLabel() {
-    const label = document.getElementById("current-user-label");
-    if (!label) return;
-    const acc = getLoggedInAccount();
-    label.textContent = acc ? `Logged in as: ${acc.username} (${acc.role || "User"})` : "Not logged in";
   }
 
   function initLogin() {
@@ -2345,6 +2413,7 @@
 
     loginForm.addEventListener("submit", e => {
       e.preventDefault();
+
       const username = loginUserInput.value.trim();
       const password = loginPassInput.value;
 
@@ -2356,14 +2425,14 @@
       }
 
       loginErrorEl.style.display = "none";
-      activeAccountUsername = result.account.username;
-      saveActiveAccount();
-      setLoggedInUsername(activeAccountUsername);
+      setLoggedInUsername(result.account.username);
 
       filteredHandovers = getVisibleHandovers();
       showApp();
-      renderTable();
+      renderUsers();
+      refreshUserSelectOptions();
       renderAccounts();
+      renderTable();
       renderReports();
       renderDeletedHandovers();
 
@@ -2375,12 +2444,12 @@
     if (storedLogin) {
       const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
       if (acc) {
-        activeAccountUsername = storedLogin;
-        saveActiveAccount();
         filteredHandovers = getVisibleHandovers();
         showApp();
-        renderTable();
+        renderUsers();
+        refreshUserSelectOptions();
         renderAccounts();
+        renderTable();
         renderReports();
         renderDeletedHandovers();
         const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
@@ -2394,7 +2463,9 @@
     showLoginPage();
   }
 
-  // ===== JSON Export/Import =====
+  /* =========================
+     JSON Export/Import (Admin)
+  ========================= */
   function initExportJson() {
     const btn = document.getElementById("btn-export-json");
     if (!btn) return;
@@ -2403,6 +2474,7 @@
       const acc = getLoggedInAccount();
       if (!acc || acc.role !== "Admin") { alert("Only Admin can export JSON."); return; }
 
+      // Do not export passwords
       const accountsExport = accounts.map(a => ({
         username: a.username,
         employeeName: a.employeeName,
@@ -2413,6 +2485,7 @@
       const data = {
         exportedAt: new Date().toISOString(),
         handovers,
+        deletedHandovers,
         users,
         accounts: accountsExport,
       };
@@ -2420,9 +2493,8 @@
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
       a.href = url;
-      a.download = `warehouse-data-${dateStr}.json`;
+      a.download = `warehouse-data-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2450,39 +2522,47 @@
         const data = JSON.parse(text);
 
         if (!data || !Array.isArray(data.handovers) || !Array.isArray(data.users) || !Array.isArray(data.accounts)) {
-          alert("Invalid JSON structure.\nThe file must contain: handovers, users, and accounts arrays.");
+          alert("Invalid JSON structure. It must contain: handovers, users, and accounts arrays.");
           input.value = "";
           return;
         }
 
-        const ok = confirm("This will replace all current data (handovers, users, accounts) in this browser with the data from the file.\nDo you want to continue?");
+        const ok = confirm("This will replace current data in this browser with the imported file.\nContinue?");
         if (!ok) { input.value = ""; return; }
 
-        handovers = data.handovers;
-        users = data.users;
-        accounts = data.accounts;
+        handovers = data.handovers || [];
+        deletedHandovers = Array.isArray(data.deletedHandovers) ? data.deletedHandovers : [];
+        users = data.users || [];
+        accounts = data.accounts || [];
 
         normalizeAccountsPasswords();
 
-        // Ensure createdBy exists after import
         handovers.forEach(h => {
-          if (!h.createdBy) h.createdBy = h.from || "";
-          if (!Array.isArray(h.actionBy)) h.actionBy = getActionByArray(h);
+          if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
+          if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
+          if (!Array.isArray(h.actionBy)) h.actionBy = [];
+          h.actionBy = uniqueNames(h.actionBy);
         });
 
-        deletedHandovers = [];
+        deletedHandovers.forEach(h => {
+          if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
+          if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
+          if (!Array.isArray(h.actionBy)) h.actionBy = [];
+          h.actionBy = uniqueNames(h.actionBy);
+        });
+
         resequenceAllHandoverIdsFromOne();
         saveHandovers();
         saveDeletedHandovers();
+        saveUsers();
+        saveAccounts();
 
         filteredHandovers = getVisibleHandovers();
-
         renderUsers();
         refreshUserSelectOptions();
-        renderTable();
         renderAccounts();
+        renderTable();
         renderReports();
-        refreshActiveAccountSelect();
         renderDeletedHandovers();
 
         alert("Data imported successfully.");
@@ -2495,22 +2575,27 @@
     });
   }
 
-  // ===== Logout =====
+  /* =========================
+     Logout
+  ========================= */
   function initLogout() {
     const btn = document.getElementById("btn-logout");
     if (!btn) return;
+
     btn.addEventListener("click", () => {
       setLoggedInUsername("");
-      activeAccountUsername = "";
-      saveActiveAccount();
       filteredHandovers = [];
       updateCurrentUserLabel();
+      updateTopbarUser();
       showLoginPage();
     });
   }
 
-  // ===== DOMContentLoaded =====
+  /* =========================
+     DOMContentLoaded
+  ========================= */
   document.addEventListener("DOMContentLoaded", () => {
+    // Filters
     document.getElementById("filter-from").addEventListener("change", applyFilters);
     document.getElementById("filter-to").addEventListener("change", applyFilters);
     document.getElementById("filter-status").addEventListener("change", applyFilters);
@@ -2518,23 +2603,24 @@
     document.getElementById("filter-date-from").addEventListener("change", applyFilters);
     document.getElementById("filter-date-to").addEventListener("change", applyFilters);
     document.getElementById("filter-search").addEventListener("input", applyFilters);
-
     document.getElementById("btn-reset-filters").addEventListener("click", resetFilters);
 
-    const btnExcel = document.getElementById("btn-export-excel");
-    if (btnExcel) btnExcel.addEventListener("click", exportHandoverExcel);
+    // Excel export
+    document.getElementById("btn-export-excel").addEventListener("click", exportHandoverExcel);
 
+    // Load data
     loadUsers();
     loadHandovers();
     loadDeletedHandovers();
 
+    // Keep IDs consistent
     resequenceAllHandoverIdsFromOne();
     saveHandovers();
     saveDeletedHandovers();
 
     loadAccounts();
-    loadActiveAccount();
 
+    // Init UI
     initSidebarNavigation();
     initUserForm();
     initUserModal();
@@ -2545,13 +2631,16 @@
 
     refreshUserSelectOptions();
     renderAccounts();
+
     initExportJson();
     initImportJson();
-    refreshActiveAccountSelect();
     initLogout();
     initResequenceButton();
 
+    // Login
     initLogin();
+
+    // Deleted list
     renderDeletedHandovers();
   });
 </script>
