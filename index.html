@@ -18,246 +18,70 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
-    :root {
-      --primary-color: #145da0;
-      --bg-color: #f4f5f7;
-    }
-
-    body {
-      background: var(--bg-color);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
+    :root { --primary-color:#145da0; --bg-color:#f4f5f7; }
+    body { background:var(--bg-color); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
 
     /* ===== Login Page ===== */
-    #login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg-color);
-      padding: 1rem;
-    }
-
-    .login-card {
-      max-width: 420px;
-      width: 100%;
-      border-radius: 1rem;
-      border: 1px solid #e1e4eb;
-      background: #fff;
-    }
+    #login-page{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg-color); padding:1rem; }
+    .login-card{ max-width:420px; width:100%; border-radius:1rem; border:1px solid #e1e4eb; background:#fff; }
 
     /* ===== App Shell ===== */
-    .app-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: row;
-    }
+    .app-shell{ min-height:100vh; display:flex; flex-direction:row; }
+    .sidebar{ width:260px; background:#0c2340; color:#fff; display:flex; flex-direction:column; padding:1.5rem 1.25rem; }
+    .sidebar-brand{ display:flex; align-items:center; gap:.6rem; margin-bottom:2rem; }
+    .sidebar-brand-icon{ width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#2e86de,#48dbfb); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.1rem; }
+    .sidebar-nav .nav-link{ color:#cbd5f5; padding:.55rem .75rem; border-radius:.5rem; display:flex; align-items:center; gap:.5rem; font-size:.95rem; margin-bottom:.35rem; }
+    .sidebar-nav .nav-link.active,.sidebar-nav .nav-link:hover{ background:rgba(255,255,255,.1); color:#fff; }
+    .sidebar-footer{ margin-top:auto; font-size:.8rem; color:#9fb3ff; }
 
-    .sidebar {
-      width: 260px;
-      background: #0c2340;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem 1.25rem;
-    }
+    .main-panel{ flex:1; display:flex; flex-direction:column; padding:1.5rem 1.5rem 2rem; gap:1rem; }
+    .top-bar{ display:flex; align-items:center; gap:1rem; justify-content:space-between; flex-wrap:wrap; }
+    .top-bar-title{ font-size:1.4rem; font-weight:600; }
 
-    .sidebar-brand {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      margin-bottom: 2rem;
-    }
+    .cards-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; }
+    .stat-card{ border-radius:1rem; border:1px solid #e1e4eb; background:#fff; padding:.9rem 1rem; display:flex; flex-direction:column; gap:.25rem; }
+    .stat-label{ font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:#6b7280; }
+    .stat-value{ font-size:1.4rem; font-weight:600; }
 
-    .sidebar-brand-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #2e86de, #48dbfb);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
+    .filters-card,.table-card,.chart-card{ border-radius:1rem; border:1px solid #e1e4eb; background:#fff; padding:1rem 1.1rem; }
+    .filters-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.75rem; align-items:end; }
 
-    .sidebar-nav .nav-link {
-      color: #cbd5f5;
-      padding: 0.55rem 0.75rem;
-      border-radius: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.95rem;
-      margin-bottom: 0.35rem;
+    .table-responsive{ margin-top:.75rem; overflow:auto; }
+    table thead th{
+      font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#6b7280;
+      border-bottom-width:1px; background:#f9fafb; position:sticky; top:0; z-index:1; white-space:nowrap;
     }
+    table tbody td{ vertical-align:middle; font-size:.9rem; }
 
-    .sidebar-nav .nav-link.active,
-    .sidebar-nav .nav-link:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
+    .status-badge{ border-radius:999px; padding:.15rem .75rem; font-size:.75rem; font-weight:500; white-space:nowrap; }
+    .status-pending{ background:#fff7ed; color:#c05621; }
+    .status-completed{ background:#ecfdf3; color:#166534; }
+    .status-delayed{ background:#fef2f2; color:#b91c1c; }
+    .status-inprogress{ background:#eff6ff; color:#1d4ed8; }
 
-    .sidebar-footer {
-      margin-top: auto;
-      font-size: 0.8rem;
-      color: #9fb3ff;
+    .table-card--resizable{
+      resize:vertical; overflow:hidden; min-height:220px; max-height:80vh; display:flex; flex-direction:column;
     }
+    .table-card--resizable .table-responsive{ flex:1 1 auto; max-height:none; overflow-y:auto; }
 
-    .main-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem 1.5rem 2rem;
-      gap: 1rem;
-    }
+    /* Compact Action By cell */
+    .actionby-cell{ max-width:360px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .actionby-badges{ display:inline-flex; flex-wrap:nowrap; gap:.25rem; align-items:center; }
+    .actionby-badges .badge{ max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-    .top-bar {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      justify-content: space-between;
-      flex-wrap: wrap;
+    @media (max-width:992px){
+      .app-shell{ flex-direction:column; }
+      .sidebar{ width:100%; flex-direction:row; align-items:center; gap:1rem; }
+      .sidebar-nav{ display:flex; flex-direction:row; gap:.4rem; flex-wrap:wrap; }
+      .main-panel{ padding:1rem; }
+      .cards-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .filters-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .actionby-cell{ max-width:220px; }
     }
-
-    .top-bar-title {
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem;
-    }
-
-    .stat-card {
-      border-radius: 1rem;
-      border: 1px solid #e1e4eb;
-      background: #fff;
-      padding: 0.9rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #6b7280;
-    }
-
-    .stat-value {
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    .filters-card,
-    .table-card,
-    .chart-card {
-      border-radius: 1rem;
-      border: 1px solid #e1e4eb;
-      background: #fff;
-      padding: 1rem 1.1rem;
-    }
-
-    .filters-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 0.75rem;
-      align-items: end;
-    }
-
-    .table-responsive {
-      margin-top: 0.75rem;
-      overflow: auto;
-    }
-
-    table thead th {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #6b7280;
-      border-bottom-width: 1px;
-      background: #f9fafb;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      white-space: nowrap;
-    }
-
-    table tbody td {
-      vertical-align: middle;
-      font-size: 0.9rem;
-    }
-
-    .status-badge {
-      border-radius: 999px;
-      padding: 0.15rem 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .status-pending { background: #fff7ed; color: #c05621; }
-    .status-completed { background: #ecfdf3; color: #166534; }
-    .status-delayed { background: #fef2f2; color: #b91c1c; }
-    .status-inprogress { background: #eff6ff; color: #1d4ed8; }
-
-    .table-card--resizable {
-      resize: vertical;
-      overflow: hidden;
-      min-height: 220px;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .table-card--resizable .table-responsive {
-      flex: 1 1 auto;
-      max-height: none;
-      overflow-y: auto;
-    }
-
-    /* Compact Action By cell (no big space usage) */
-    .actionby-cell {
-      max-width: 360px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .actionby-badges {
-      display: inline-flex;
-      flex-wrap: nowrap;
-      gap: 0.25rem;
-      align-items: center;
-    }
-    .actionby-badges .badge {
-      max-width: 140px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 992px) {
-      .app-shell { flex-direction: column; }
-      .sidebar {
-        width: 100%;
-        flex-direction: row;
-        align-items: center;
-        gap: 1rem;
-      }
-      .sidebar-nav { display: flex; flex-direction: row; gap: 0.4rem; flex-wrap: wrap; }
-      .main-panel { padding: 1rem; }
-      .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .actionby-cell { max-width: 220px; }
-    }
-
-    @media (max-width: 576px) {
-      .cards-grid { grid-template-columns: 1fr; }
-      .filters-grid { grid-template-columns: 1fr; }
-      .actionby-cell { max-width: 160px; }
+    @media (max-width:576px){
+      .cards-grid{ grid-template-columns:1fr; }
+      .filters-grid{ grid-template-columns:1fr; }
+      .actionby-cell{ max-width:160px; }
     }
   </style>
 </head>
@@ -280,8 +104,6 @@
       <div id="login-error" class="text-danger small mb-2" style="display:none;"></div>
       <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
-
-    <!-- Neutral text (does NOT reveal username/password patterns) -->
     <div class="mt-3 text-muted small text-center">
       Please enter your assigned account credentials.
     </div>
@@ -297,28 +119,17 @@
         <div class="sidebar-brand-icon">WH</div>
         <div>
           <div class="fw-semibold">Warehouse</div>
-          <div style="font-size: 0.75rem; color: #9ca3af">Handover Dashboard</div>
+          <div style="font-size:.75rem;color:#9ca3af">Handover Dashboard</div>
         </div>
       </div>
+
       <nav class="sidebar-nav">
-        <a href="#" class="nav-link active" data-view="dashboard">
-          <i class="bi bi-grid"></i><span>Dashboard</span>
-        </a>
-        <a href="#" class="nav-link" data-view="handovers">
-          <i class="bi bi-box-seam"></i><span>Handovers</span>
-        </a>
-        <a href="#" class="nav-link" data-view="deleted-handovers">
-          <i class="bi bi-trash3"></i><span>Deleted Handovers</span>
-        </a>
-        <a href="#" class="nav-link" data-view="warehouses">
-          <i class="bi bi-buildings"></i><span>Warehouses</span>
-        </a>
-        <a href="#" class="nav-link" data-view="admin-users">
-          <i class="bi bi-people"></i><span>Users (Admin)</span>
-        </a>
-        <a href="#" class="nav-link" data-view="reports">
-          <i class="bi bi-bar-chart-line"></i><span>Reports</span>
-        </a>
+        <a href="#" class="nav-link active" data-view="dashboard"><i class="bi bi-grid"></i><span>Dashboard</span></a>
+        <a href="#" class="nav-link" data-view="completed"><i class="bi bi-check2-circle"></i><span>Completed</span></a>
+        <a href="#" class="nav-link" data-view="deleted-handovers"><i class="bi bi-trash3"></i><span>Deleted Handovers</span></a>
+        <a href="#" class="nav-link" data-view="warehouses"><i class="bi bi-buildings"></i><span>Warehouses</span></a>
+        <a href="#" class="nav-link" data-view="admin-users"><i class="bi bi-people"></i><span>Users (Admin)</span></a>
+        <a href="#" class="nav-link" data-view="reports"><i class="bi bi-bar-chart-line"></i><span>Reports</span></a>
       </nav>
     </div>
 
@@ -327,27 +138,24 @@
       <button class="btn btn-sm btn-outline-light w-100 mb-2" id="btn-logout">
         <i class="bi bi-box-arrow-right"></i> Logout
       </button>
-      <div style="font-size:0.75rem;color:#9fb3ff;">v1.6 – Creator Visibility + ActionBy Permissions</div>
+      <div style="font-size:.75rem;color:#9fb3ff;">v1.7 – Completed hidden from active list + Permanent delete</div>
     </div>
   </aside>
 
   <!-- Main Panel -->
   <main class="main-panel">
 
-    <!-- DASHBOARD VIEW -->
+    <!-- DASHBOARD VIEW (ACTIVE ONLY, NO COMPLETED) -->
     <section class="view-section" data-view="dashboard">
       <div class="top-bar">
         <div>
           <div class="top-bar-title">Warehouse Handover Overview</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Track and manage handovers between warehouses in real time.
-          </div>
+          <div style="font-size:.85rem;color:#6b7280">Track and manage handovers between warehouses in real time.</div>
         </div>
 
         <div class="d-flex align-items-center gap-2">
           <div class="small text-muted">
-            <i class="bi bi-person-circle"></i>
-            <span id="topbar-user"></span>
+            <i class="bi bi-person-circle"></i> <span id="topbar-user"></span>
           </div>
 
           <button class="btn btn-sm btn-primary" id="btn-add-handover">
@@ -359,15 +167,15 @@
         </div>
       </div>
 
-      <!-- Stat cards -->
+      <!-- Stat cards (COUNTS are from ALL visible, including Completed) -->
       <section class="cards-grid">
         <div class="stat-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span class="stat-label">Total Handovers</span>
+            <span class="stat-label">Total (Visible)</span>
             <i class="bi bi-arrows-move"></i>
           </div>
           <div class="stat-value" id="stat-total">0</div>
-          <div class="text-success" style="font-size:0.75rem;">Updated automatically</div>
+          <div class="text-success" style="font-size:.75rem;">Updated automatically</div>
         </div>
 
         <div class="stat-card">
@@ -376,7 +184,7 @@
             <i class="bi bi-hourglass-split"></i>
           </div>
           <div class="stat-value" id="stat-pending">0</div>
-          <div class="text-warning" style="font-size:0.75rem;">Items awaiting confirmation</div>
+          <div class="text-warning" style="font-size:.75rem;">Items awaiting confirmation</div>
         </div>
 
         <div class="stat-card">
@@ -385,7 +193,7 @@
             <i class="bi bi-check2-circle"></i>
           </div>
           <div class="stat-value text-success" id="stat-completed">0</div>
-          <div class="text-success-emphasis" style="font-size:0.75rem;">Successfully handed over</div>
+          <div class="text-success-emphasis" style="font-size:.75rem;">Successfully handed over</div>
         </div>
 
         <div class="stat-card">
@@ -394,30 +202,26 @@
             <i class="bi bi-exclamation-triangle"></i>
           </div>
           <div class="stat-value text-danger" id="stat-delayed">0</div>
-          <div class="text-danger-emphasis" style="font-size:0.75rem;">Check issues and follow-up</div>
+          <div class="text-danger-emphasis" style="font-size:.75rem;">Check issues and follow-up</div>
         </div>
       </section>
 
-      <!-- Filters -->
+      <!-- Filters (ACTIVE list only; status does NOT offer "Completed") -->
       <section class="filters-card mt-2">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Filters</h6>
+          <h6 class="mb-0">Filters (Active Only)</h6>
           <button class="btn btn-sm btn-link p-0" id="btn-reset-filters">Reset filters</button>
         </div>
 
         <div class="filters-grid">
           <div>
             <label class="form-label form-label-sm">From (Employee)</label>
-            <select id="filter-from" class="form-select form-select-sm">
-              <option value="">All</option>
-            </select>
+            <select id="filter-from" class="form-select form-select-sm"><option value="">All</option></select>
           </div>
 
           <div>
             <label class="form-label form-label-sm">To (Employee)</label>
-            <select id="filter-to" class="form-select form-select-sm">
-              <option value="">All</option>
-            </select>
+            <select id="filter-to" class="form-select form-select-sm"><option value="">All</option></select>
           </div>
 
           <div>
@@ -426,7 +230,6 @@
               <option value="">All</option>
               <option>Pending</option>
               <option>In Progress</option>
-              <option>Completed</option>
               <option>Delayed</option>
             </select>
           </div>
@@ -459,13 +262,13 @@
         </div>
       </section>
 
-      <!-- Table -->
+      <!-- Active Table -->
       <div class="row mt-2 g-3">
         <div class="col-12">
           <section class="table-card table-card--resizable">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0">Handover List</h6>
-              <span id="table-count" style="font-size: 0.8rem; color: #6b7280"></span>
+              <h6 class="mb-0">Handover List (Active)</h6>
+              <span id="table-count" style="font-size:.8rem;color:#6b7280"></span>
             </div>
 
             <div class="table-responsive">
@@ -481,7 +284,7 @@
                     <th>DATE</th>
                     <th>ACTION BY</th>
                     <th>ATTACHMENT</th>
-                    <th style="width: 120px;">ACTIONS</th>
+                    <th style="width: 140px;">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody id="handover-tbody"></tbody>
@@ -492,24 +295,19 @@
       </div>
     </section>
 
-    <!-- HANDOVERS VIEW -->
-    <section class="view-section d-none" data-view="handovers">
+    <!-- COMPLETED VIEW (ONLY COMPLETED) -->
+    <section class="view-section d-none" data-view="completed">
       <div class="top-bar mb-3">
         <div>
           <div class="top-bar-title">Completed Handovers</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            All handovers that are currently marked as Completed.
-          </div>
+          <div style="font-size:.85rem;color:#6b7280">All handovers that are currently marked as Completed.</div>
         </div>
-        <button class="btn btn-sm btn-primary" id="btn-add-handover-2">
-          <i class="bi bi-plus-lg"></i> New Handover
-        </button>
       </div>
 
       <div class="table-card">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Completed Handovers</h6>
-          <span id="completed-count" style="font-size: 0.8rem; color: #6b7280"></span>
+          <h6 class="mb-0">Completed List</h6>
+          <span id="completed-count" style="font-size:.8rem;color:#6b7280"></span>
         </div>
 
         <div class="table-responsive">
@@ -539,16 +337,16 @@
       <div class="top-bar mb-3">
         <div>
           <div class="top-bar-title">Deleted Handovers</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Handovers deleted by Admin. You can restore them back to the main list.
+          <div style="font-size:.85rem;color:#6b7280">
+            Deleted by Admin. You can restore, or permanently delete.
           </div>
         </div>
       </div>
 
       <div class="table-card">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Deleted Handovers</h6>
-          <span id="deleted-count" style="font-size: 0.8rem; color: #6b7280"></span>
+          <h6 class="mb-0">Deleted List</h6>
+          <span id="deleted-count" style="font-size:.8rem;color:#6b7280"></span>
         </div>
 
         <div class="table-responsive">
@@ -564,7 +362,7 @@
                 <th>DATE</th>
                 <th>ACTION BY</th>
                 <th>ATTACHMENT</th>
-                <th style="width: 90px;">ACTIONS</th>
+                <th style="width: 150px;">ACTIONS</th>
               </tr>
             </thead>
             <tbody id="deleted-handover-tbody"></tbody>
@@ -578,17 +376,13 @@
       <div class="top-bar mb-3">
         <div>
           <div class="top-bar-title">Warehouses</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Manage and review all warehouses.
-          </div>
+          <div style="font-size:.85rem;color:#6b7280">Manage and review all warehouses.</div>
         </div>
       </div>
 
       <div class="table-card mb-3">
         <h6>Warehouses List</h6>
-        <p class="text-muted mb-0">
-          Add your warehouses list here later (name, location, capacity, status, etc.).
-        </p>
+        <p class="text-muted mb-0">Add your warehouses list here later (name, location, capacity, status, etc.).</p>
       </div>
 
       <div class="table-card">
@@ -597,31 +391,15 @@
         </div>
 
         <form id="user-form" class="row g-2 mb-3">
-          <div class="col-md-4">
-            <input type="text" id="user-name" class="form-control" placeholder="Employee name" required />
-          </div>
-          <div class="col-md-3">
-            <input type="text" id="user-role" class="form-control" placeholder="Role (e.g. Manager)" />
-          </div>
-          <div class="col-md-3">
-            <input type="email" id="user-email" class="form-control" placeholder="Email address" />
-          </div>
-          <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary">Add User</button>
-          </div>
+          <div class="col-md-4"><input type="text" id="user-name" class="form-control" placeholder="Employee name" required /></div>
+          <div class="col-md-3"><input type="text" id="user-role" class="form-control" placeholder="Role (e.g. Manager)" /></div>
+          <div class="col-md-3"><input type="email" id="user-email" class="form-control" placeholder="Email address" /></div>
+          <div class="col-md-2 d-grid"><button type="submit" class="btn btn-primary">Add User</button></div>
         </form>
 
         <div class="table-responsive">
           <table class="table table-sm align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Email</th>
-                <th style="width: 70px;">Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Email</th><th style="width:70px;">Actions</th></tr></thead>
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
@@ -633,9 +411,7 @@
       <div class="top-bar mb-3">
         <div>
           <div class="top-bar-title">Users (Admin)</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Manage application accounts (username, role, status, and linked employee).
-          </div>
+          <div style="font-size:.85rem;color:#6b7280">Manage application accounts (username, role, status, linked employee).</div>
         </div>
       </div>
 
@@ -654,16 +430,7 @@
 
         <div class="table-responsive">
           <table class="table table-sm align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Username</th>
-                <th>Employee</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th style="width: 100px;">Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>#</th><th>Username</th><th>Employee</th><th>Role</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
             <tbody id="accounts-tbody"></tbody>
           </table>
         </div>
@@ -675,47 +442,21 @@
       <div class="top-bar mb-3">
         <div>
           <div class="top-bar-title">Reports & Analytics</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Summary reports and KPI analytics for your handovers.
-          </div>
+          <div style="font-size:.85rem;color:#6b7280">Summary reports and KPI analytics for your handovers.</div>
         </div>
 
         <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-secondary" id="btn-import-json">
-            <i class="bi bi-upload"></i> Import JSON (Admin)
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-export-json">
-            <i class="bi bi-download"></i> Export JSON (Admin)
-          </button>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-import-json"><i class="bi bi-upload"></i> Import JSON (Admin)</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-export-json"><i class="bi bi-download"></i> Export JSON (Admin)</button>
           <input type="file" id="import-json-input" accept="application/json" hidden />
         </div>
       </div>
 
       <div class="row g-3 mb-3">
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Total Handovers</span>
-            <div class="stat-value" id="rep-total">0</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Completed</span>
-            <div class="stat-value text-success" id="rep-completed">0</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Pending</span>
-            <div class="stat-value text-warning" id="rep-pending">0</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <span class="stat-label">Delayed</span>
-            <div class="stat-value text-danger" id="rep-delayed">0</div>
-          </div>
-        </div>
+        <div class="col-md-3"><div class="stat-card"><span class="stat-label">Total Handovers</span><div class="stat-value" id="rep-total">0</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><span class="stat-label">Completed</span><div class="stat-value text-success" id="rep-completed">0</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><span class="stat-label">Pending</span><div class="stat-value text-warning" id="rep-pending">0</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><span class="stat-label">Delayed</span><div class="stat-value text-danger" id="rep-delayed">0</div></div></div>
       </div>
 
       <div class="row g-3">
@@ -772,8 +513,7 @@
 
           <div class="mb-2">
             <label class="form-label">Long Description</label>
-            <textarea class="form-control" id="handover-long-desc" rows="3"
-              placeholder="Optional detailed notes (reason, transport, additional comments)"></textarea>
+            <textarea class="form-control" id="handover-long-desc" rows="3" placeholder="Optional detailed notes"></textarea>
           </div>
 
           <div class="mb-2">
@@ -803,13 +543,9 @@
 
           <div class="mb-2">
             <label class="form-label">Action By</label>
-
-            <!-- User can decide to include their own name or not -->
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" id="include-my-name" checked>
-              <label class="form-check-label" for="include-my-name">
-                Include my name in Action By
-              </label>
+              <label class="form-check-label" for="include-my-name">Include my name in Action By</label>
             </div>
 
             <select class="form-select" id="handover-action-by" multiple required></select>
@@ -821,9 +557,7 @@
             <label class="form-label">Attachment (optional)</label>
             <div id="current-attachment-info" class="small text-muted mb-1">No attachment</div>
             <input type="file" class="form-control" id="handover-attachment" />
-            <div class="form-text">
-              You can attach any file. Large files may not be saved due to browser storage limits.
-            </div>
+            <div class="form-text">Large files may not be saved due to browser storage limits.</div>
           </div>
 
         </div>
@@ -848,20 +582,9 @@
         </div>
 
         <div class="modal-body">
-          <div class="mb-2">
-            <label class="form-label">Name</label>
-            <input type="text" id="edit-user-name" class="form-control" required />
-          </div>
-
-          <div class="mb-2">
-            <label class="form-label">Role</label>
-            <input type="text" id="edit-user-role" class="form-control" />
-          </div>
-
-          <div class="mb-2">
-            <label class="form-label">Email</label>
-            <input type="email" id="edit-user-email" class="form-control" />
-          </div>
+          <div class="mb-2"><label class="form-label">Name</label><input type="text" id="edit-user-name" class="form-control" required /></div>
+          <div class="mb-2"><label class="form-label">Role</label><input type="text" id="edit-user-role" class="form-control" /></div>
+          <div class="mb-2"><label class="form-label">Email</label><input type="email" id="edit-user-email" class="form-control" /></div>
         </div>
 
         <div class="modal-footer">
@@ -884,43 +607,25 @@
         </div>
 
         <div class="modal-body">
-          <div class="mb-2">
-            <label class="form-label">Username</label>
-            <input type="text" id="account-username" class="form-control" required />
-          </div>
-
-          <div class="mb-2">
-            <label class="form-label">Linked Employee (optional)</label>
-            <select id="account-employee" class="form-select"></select>
-          </div>
-
+          <div class="mb-2"><label class="form-label">Username</label><input type="text" id="account-username" class="form-control" required /></div>
+          <div class="mb-2"><label class="form-label">Linked Employee (optional)</label><select id="account-employee" class="form-select"></select></div>
           <div class="mb-2">
             <label class="form-label">Role</label>
             <select id="account-role" class="form-select">
-              <option>Admin</option>
-              <option>Supervisor</option>
-              <option>User</option>
-              <option>Viewer</option>
+              <option>Admin</option><option>Supervisor</option><option>User</option><option>Viewer</option>
             </select>
           </div>
-
           <div class="mb-2">
             <label class="form-label">Status</label>
-            <select id="account-status" class="form-select">
-              <option value="Active">Active</option>
-              <option value="Disabled">Disabled</option>
-            </select>
+            <select id="account-status" class="form-select"><option value="Active">Active</option><option value="Disabled">Disabled</option></select>
           </div>
-
           <div class="mb-2">
             <label class="form-label">Password (Admin only)</label>
             <input type="password" id="account-password" class="form-control" placeholder="Leave blank to keep current password" />
             <div class="form-text">Only Admin can set or change passwords.</div>
           </div>
-
-          <div class="alert alert-warning mt-2 mb-0" style="font-size:0.8rem;">
-            Passwords are stored only in this browser (prototype).
-            Exported JSON does not include passwords for safety.
+          <div class="alert alert-warning mt-2 mb-0" style="font-size:.8rem;">
+            Passwords are stored only in this browser (prototype). Exported JSON does not include passwords.
           </div>
         </div>
 
@@ -938,307 +643,195 @@
 
 <script>
   const MAX_ATTACHMENT_SIZE = 3 * 1024 * 1024; // ~3MB
-
-  // Storage key for the global serial counter
   const ID_COUNTER_STORAGE_KEY = "warehouseLastHndrSerial";
 
-  function loadIdCounter() {
-    try {
-      const stored = localStorage.getItem(ID_COUNTER_STORAGE_KEY);
-      const num = parseInt(stored, 10);
-      return isNaN(num) ? 0 : num;
-    } catch (e) { return 0; }
-  }
+  function loadIdCounter(){ try{ const s=localStorage.getItem(ID_COUNTER_STORAGE_KEY); const n=parseInt(s,10); return isNaN(n)?0:n; }catch(e){ return 0; } }
+  function saveIdCounter(last){ try{ localStorage.setItem(ID_COUNTER_STORAGE_KEY,String(last||0)); }catch(e){} }
 
-  function saveIdCounter(last) {
-    try { localStorage.setItem(ID_COUNTER_STORAGE_KEY, String(last || 0)); } catch (e) {}
-  }
-
-  function normalizeIdsForList(list, lastSerial) {
-    if (!Array.isArray(list) || list.length === 0) return lastSerial;
-    let counter = typeof lastSerial === "number" ? lastSerial : 0;
-
-    list.forEach(h => {
-      if (!h) return;
-      let yy, mm;
-      const dateStr = h.date || "";
-      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
-      if (m) { yy = m[1].slice(-2); mm = m[2]; }
-      else {
-        const today = new Date();
-        yy = String(today.getFullYear()).slice(-2);
-        mm = String(today.getMonth() + 1).padStart(2, "0");
-      }
-      counter += 1;
-      const serial = String(counter).padStart(4, "0");
-      h.id = `HNDR-${yy}-${mm}-${serial}`;
+  function normalizeIdsForList(list,lastSerial){
+    if(!Array.isArray(list)||list.length===0) return lastSerial;
+    let counter=typeof lastSerial==="number"?lastSerial:0;
+    list.forEach(h=>{
+      if(!h) return;
+      let yy,mm;
+      const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(h.date||"");
+      if(m){ yy=m[1].slice(-2); mm=m[2]; }
+      else{ const t=new Date(); yy=String(t.getFullYear()).slice(-2); mm=String(t.getMonth()+1).padStart(2,"0"); }
+      counter+=1;
+      const serial=String(counter).padStart(4,"0");
+      h.id=`HNDR-${yy}-${mm}-${serial}`;
     });
-
     return counter;
   }
 
-  function resequenceAllHandoverIdsFromOne() {
-    const all = [...handovers, ...deletedHandovers];
-    if (all.length === 0) { saveIdCounter(0); return; }
-
-    all.sort((a, b) => {
-      const da = a.date || "";
-      const db = b.date || "";
-      if (da && db && da !== db) return da.localeCompare(db);
-      return (a.id || "").localeCompare(b.id || "");
+  function resequenceAllHandoverIdsFromOne(){
+    const all=[...handovers,...deletedHandovers];
+    if(all.length===0){ saveIdCounter(0); return; }
+    all.sort((a,b)=>{
+      const da=a.date||"", db=b.date||"";
+      if(da&&db&&da!==db) return da.localeCompare(db);
+      return (a.id||"").localeCompare(b.id||"");
     });
-
-    let lastSerial = 0;
-    lastSerial = normalizeIdsForList(all, lastSerial);
-    saveIdCounter(lastSerial);
+    let last=0;
+    last=normalizeIdsForList(all,last);
+    saveIdCounter(last);
   }
 
-  /* =========================
-     Default Data
-  ========================= */
-  const defaultUsers = [
-    { name: "Sameer Jabbar", role: "Manager", email: "sameer_jabbar@yahoo.com" },
-    { name: "Ardasher A. Ahmad", role: "Supervisor", email: "" },
-    { name: "Diyar", role: "User", email: "" },
-    { name: "Darya Ezzalddin Kareem", role: "User", email: "" }
+  /* ===== Default Data ===== */
+  const defaultUsers=[
+    {name:"Sameer Jabbar",role:"Manager",email:"sameer_jabbar@yahoo.com"},
+    {name:"Ardasher A. Ahmad",role:"Supervisor",email:""},
+    {name:"Diyar",role:"User",email:""},
+    {name:"Darya Ezzalddin Kareem",role:"User",email:""}
   ];
 
-  const defaultHandovers = [
-    {
-      id: "HNDR-25-09-0001",
-      from: "Sameer Jabbar",
-      to: "Ardasher A. Ahmad",
-      items: "120 cartons of Product A",
-      longDescription: "",
-      priority: "P1",
-      status: "Pending",
-      date: "2025-09-20",
-      actionBy: ["Sameer Jabbar"],
-      createdBy: "Sameer Jabbar",
-      attachmentName: null,
-      attachmentType: null,
-      attachmentSize: null,
-      attachmentDataUrl: null,
+  const defaultHandovers=[
+    { id:"HNDR-25-09-0001", from:"Sameer Jabbar", to:"Ardasher A. Ahmad",
+      items:"120 cartons of Product A", longDescription:"",
+      priority:"P1", status:"Pending", date:"2025-09-20",
+      actionBy:["Sameer Jabbar"], createdBy:"Sameer Jabbar",
+      attachmentName:null, attachmentType:null, attachmentSize:null, attachmentDataUrl:null
     }
   ];
 
-  const defaultAccounts = [
-    { username: "Admin", employeeName: "Sameer Jabbar", role: "Admin", status: "Active", password: "1234" },
-    { username: "Diyar", employeeName: "Diyar", role: "User", status: "Active", password: "1234" },
-    { username: "Darya", employeeName: "Darya Ezzalddin Kareem", role: "User", status: "Active", password: "1234" }
+  const defaultAccounts=[
+    {username:"Admin",employeeName:"Sameer Jabbar",role:"Admin",status:"Active",password:"1234"},
+    {username:"Diyar",employeeName:"Diyar",role:"User",status:"Active",password:"1234"},
+    {username:"Darya",employeeName:"Darya Ezzalddin Kareem",role:"User",status:"Active",password:"1234"}
   ];
 
-  let handovers = [];
-  let filteredHandovers = [];
-  let deletedHandovers = [];
-  let users = [];
-  let accounts = [];
+  let handovers=[], deletedHandovers=[], users=[], accounts=[];
+  let filteredActiveHandovers=[];   // ACTIVE table only (no Completed)
+  let reportsStatusChart=null, reportsUserChart=null;
 
-  let reportsStatusChart = null;
-  let reportsUserChart = null;
+  let isEditMode=false, editingId=null;
+  let handoverModal, handoverForm, modalTitleEl, handoverSaveBtn;
+  let inputId,inputFrom,inputTo,inputItems,inputLongDesc,inputPriority,inputStatus,inputDate,inputActionBy;
+  let attachmentInput,currentAttachmentInfo,includeMyNameCheckbox;
 
-  let isEditMode = false;
-  let editingId = null;
-  let editingReadOnly = false;
+  let userModal,userEditForm,editUserNameInput,editUserRoleInput,editUserEmailInput,editingUserIndex=null;
+  let accountModal,accountForm,accountUsernameInput,accountEmployeeSelect,accountRoleSelect,accountStatusSelect,accountPasswordInput;
+  let isEditAccount=false, editingAccountIndex=null;
 
-  let editingUserIndex = null;
-  let userModal, userEditForm, editUserNameInput, editUserRoleInput, editUserEmailInput;
-
-  let handoverModal;
-  let handoverForm;
-  let inputId, inputFrom, inputTo, inputItems, inputLongDesc, inputPriority,
-      inputStatus, inputDate, inputActionBy,
-      attachmentInput, currentAttachmentInfo, modalTitleEl, handoverSaveBtn;
-
-  let includeMyNameCheckbox = null;
-
-  let accountModal, accountForm;
-  let accountUsernameInput, accountEmployeeSelect, accountRoleSelect, accountStatusSelect, accountPasswordInput;
-  let isEditAccount = false;
-  let editingAccountIndex = null;
-
-  /* =========================
-     Action By Helpers
-  ========================= */
-  function getActionByArray(h) {
-    const v = h ? h.actionBy : null;
-    if (Array.isArray(v)) return v.map(x => String(x || "").trim()).filter(Boolean);
-    const s = String(v || "").trim();
-    return s ? [s] : [];
+  /* ===== Helpers ===== */
+  function getActionByArray(h){
+    const v=h?h.actionBy:null;
+    if(Array.isArray(v)) return v.map(x=>String(x||"").trim()).filter(Boolean);
+    const s=String(v||"").trim(); return s?[s]:[];
   }
-
-  function uniqueNames(arr) {
-    const out = [];
-    const set = new Set();
-    (arr || []).forEach(x => {
-      const v = String(x || "").trim();
-      if (!v) return;
-      if (set.has(v)) return;
-      set.add(v);
-      out.push(v);
-    });
+  function uniqueNames(arr){
+    const out=[], set=new Set();
+    (arr||[]).forEach(x=>{ const v=String(x||"").trim(); if(!v||set.has(v)) return; set.add(v); out.push(v); });
     return out;
   }
-
-  function isUserAssigned(h, empName) {
-    const name = (empName || "").trim();
-    if (!name) return false;
-    return getActionByArray(h).includes(name);
+  function isUserAssigned(h,empName){ const n=(empName||"").trim(); if(!n) return false; return getActionByArray(h).includes(n); }
+  function isCreator(h,empName){ const n=(empName||"").trim(); if(!n) return false; return String(h?.createdBy||"").trim()===n; }
+  function setMultiSelectValues(sel,values){
+    const set=new Set((values||[]).map(v=>String(v||"").trim()).filter(Boolean));
+    Array.from(sel.options).forEach(o=>o.selected=set.has(o.value));
   }
 
-  function isCreator(h, empName) {
-    const name = (empName || "").trim();
-    if (!name) return false;
-    return String(h?.createdBy || "").trim() === name;
-  }
+  /* ===== Storage ===== */
+  function loadUsers(){ const s=localStorage.getItem("warehouseUsers"); users=s?(()=>{try{return JSON.parse(s)}catch{return [...defaultUsers]}})():[...defaultUsers]; }
+  function saveUsers(){ localStorage.setItem("warehouseUsers",JSON.stringify(users)); }
 
-  function setMultiSelectValues(selectEl, values) {
-    if (!selectEl) return;
-    const set = new Set((values || []).map(v => String(v || "").trim()).filter(Boolean));
-    Array.from(selectEl.options).forEach(opt => { opt.selected = set.has(opt.value); });
-  }
-
-  /* =========================
-     Storage Load/Save
-  ========================= */
-  function loadUsers() {
-    const saved = localStorage.getItem("warehouseUsers");
-    if (saved) { try { users = JSON.parse(saved); } catch { users = [...defaultUsers]; } }
-    else users = [...defaultUsers];
-  }
-  function saveUsers() { localStorage.setItem("warehouseUsers", JSON.stringify(users)); }
-
-  function loadHandovers() {
-    const saved = localStorage.getItem("warehouseHandovers");
-    if (saved) { try { handovers = JSON.parse(saved); } catch { handovers = [...defaultHandovers]; } }
-    else handovers = [...defaultHandovers];
-
-    // Backward compatibility
-    handovers.forEach(h => {
-      if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
-      if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
-      if (!Array.isArray(h.actionBy)) h.actionBy = [];
-    });
-
-    filteredHandovers = [...handovers];
-  }
-  function saveHandovers() { localStorage.setItem("warehouseHandovers", JSON.stringify(handovers)); }
-
-  function loadDeletedHandovers() {
-    const saved = localStorage.getItem("warehouseDeletedHandovers");
-    if (saved) { try { deletedHandovers = JSON.parse(saved); } catch { deletedHandovers = []; } }
-    else deletedHandovers = [];
-
-    deletedHandovers.forEach(h => {
-      if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
-      if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
-      if (!Array.isArray(h.actionBy)) h.actionBy = [];
+  function loadHandovers(){
+    const s=localStorage.getItem("warehouseHandovers");
+    handovers=s?(()=>{try{return JSON.parse(s)}catch{return [...defaultHandovers]}})():[...defaultHandovers];
+    handovers.forEach(h=>{
+      if(typeof h.createdBy==="undefined") h.createdBy=h.from||"";
+      if(typeof h.actionBy==="string") h.actionBy=uniqueNames([h.actionBy]);
+      if(!Array.isArray(h.actionBy)) h.actionBy=[];
+      h.actionBy=uniqueNames(h.actionBy);
     });
   }
-  function saveDeletedHandovers() { localStorage.setItem("warehouseDeletedHandovers", JSON.stringify(deletedHandovers)); }
+  function saveHandovers(){ localStorage.setItem("warehouseHandovers",JSON.stringify(handovers)); }
 
-  function normalizeAccountsPasswords() {
-    accounts.forEach(acc => {
-      if (typeof acc.password === "undefined" || acc.password === null) acc.password = "1234";
-      if (typeof acc.status === "undefined" || acc.status === null) acc.status = "Active";
-      if (!acc.role) acc.role = "User";
+  function loadDeletedHandovers(){
+    const s=localStorage.getItem("warehouseDeletedHandovers");
+    deletedHandovers=s?(()=>{try{return JSON.parse(s)}catch{return []}})():[];
+    deletedHandovers.forEach(h=>{
+      if(typeof h.createdBy==="undefined") h.createdBy=h.from||"";
+      if(typeof h.actionBy==="string") h.actionBy=uniqueNames([h.actionBy]);
+      if(!Array.isArray(h.actionBy)) h.actionBy=[];
+      h.actionBy=uniqueNames(h.actionBy);
     });
   }
+  function saveDeletedHandovers(){ localStorage.setItem("warehouseDeletedHandovers",JSON.stringify(deletedHandovers)); }
 
-  function loadAccounts() {
-    const saved = localStorage.getItem("warehouseAccounts");
-    if (saved) { try { accounts = JSON.parse(saved); } catch { accounts = [...defaultAccounts]; } }
-    else accounts = [...defaultAccounts];
+  function normalizeAccountsPasswords(){
+    accounts.forEach(a=>{
+      if(typeof a.password==="undefined"||a.password===null) a.password="1234";
+      if(typeof a.status==="undefined"||a.status===null) a.status="Active";
+      if(!a.role) a.role="User";
+    });
+  }
+  function loadAccounts(){
+    const s=localStorage.getItem("warehouseAccounts");
+    accounts=s?(()=>{try{return JSON.parse(s)}catch{return [...defaultAccounts]}})():[...defaultAccounts];
     normalizeAccountsPasswords();
   }
-  function saveAccounts() {
-    normalizeAccountsPasswords();
-    localStorage.setItem("warehouseAccounts", JSON.stringify(accounts));
-  }
+  function saveAccounts(){ normalizeAccountsPasswords(); localStorage.setItem("warehouseAccounts",JSON.stringify(accounts)); }
 
-  /* =========================
-     Login Session
-  ========================= */
-  function getLoggedInUsername() {
-    return localStorage.getItem("warehouseLoggedInAccountUsername") || "";
-  }
-  function setLoggedInUsername(username) {
-    if (username) localStorage.setItem("warehouseLoggedInAccountUsername", username);
-    else localStorage.removeItem("warehouseLoggedInAccountUsername");
-  }
-  function getLoggedInAccount() {
-    const username = getLoggedInUsername();
-    if (!username) return null;
-    return accounts.find(acc => acc.username === username) || null;
-  }
+  /* ===== Session ===== */
+  function getLoggedInUsername(){ return localStorage.getItem("warehouseLoggedInAccountUsername")||""; }
+  function setLoggedInUsername(u){ if(u) localStorage.setItem("warehouseLoggedInAccountUsername",u); else localStorage.removeItem("warehouseLoggedInAccountUsername"); }
+  function getLoggedInAccount(){ const u=getLoggedInUsername(); if(!u) return null; return accounts.find(a=>a.username===u)||null; }
 
-  /* =========================
-     Visibility & Permissions
-  ========================= */
-  function getVisibleHandovers() {
-    const acc = getLoggedInAccount();
-    if (!acc) return [];
-    if (acc.role === "Admin" || acc.role === "Supervisor") return handovers;
+  /* ===== Visibility ===== */
+  function getVisibleAllHandovers(){
+    const acc=getLoggedInAccount();
+    if(!acc) return [];
+    if(acc.role==="Admin"||acc.role==="Supervisor") return handovers;
 
-    const empName = (acc.employeeName || "").trim();
-    if (!empName) return [];
-
-    // IMPORTANT:
-    // user sees handovers if:
-    // - assigned in Action By OR
-    // - To == user OR
-    // - Created By == user
+    const emp=(acc.employeeName||"").trim();
+    if(!emp) return [];
     return handovers.filter(h =>
-      isUserAssigned(h, empName) ||
-      (h.to || "").trim() === empName ||
-      isCreator(h, empName)
+      isUserAssigned(h,emp) ||
+      (h.to||"").trim()===emp ||
+      isCreator(h,emp)
     );
   }
 
-  function canEditHandover(h) {
-    const acc = getLoggedInAccount();
-    if (!acc) return false;
-    if (acc.role === "Admin" || acc.role === "Supervisor") return true;
+  // Active list excludes Completed for everyone (as requested)
+  function getVisibleActiveHandovers(){
+    return getVisibleAllHandovers().filter(h => h.status !== "Completed");
+  }
 
-    const empName = (acc.employeeName || "").trim();
-    if (!empName) return false;
+  function canEditHandover(h){
+    const acc=getLoggedInAccount();
+    if(!acc) return false;
+    if(acc.role==="Admin"||acc.role==="Supervisor") return true;
 
-    if (acc.role === "User") {
-      return isUserAssigned(h, empName) || (h.to || "").trim() === empName || isCreator(h, empName);
+    const emp=(acc.employeeName||"").trim();
+    if(!emp) return false;
+    if(acc.role==="User"){
+      return isUserAssigned(h,emp) || (h.to||"").trim()===emp || isCreator(h,emp);
     }
-    return false; // Viewer etc.
+    return false;
   }
 
   // Only Admin OR Creator can edit Action By
-  function canEditActionBy(h) {
-    const acc = getLoggedInAccount();
-    if (!acc) return false;
-    if (acc.role === "Admin") return true;
-
-    const empName = (acc.employeeName || "").trim();
-    if (!empName) return false;
-    return isCreator(h, empName);
+  function canEditActionBy(h){
+    const acc=getLoggedInAccount();
+    if(!acc) return false;
+    if(acc.role==="Admin") return true;
+    const emp=(acc.employeeName||"").trim();
+    return emp ? isCreator(h,emp) : false;
   }
 
-  /* =========================
-     ID & Status
-  ========================= */
-  function generateNextId() {
-    const today = new Date();
-    const year = String(today.getFullYear()).slice(-2);
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-
-    let lastSerial = loadIdCounter();
-    if (typeof lastSerial !== "number" || isNaN(lastSerial)) lastSerial = 0;
-    lastSerial += 1;
-    saveIdCounter(lastSerial);
-
-    const serial = String(lastSerial).padStart(4, "0");
-    return `HNDR-${year}-${month}-${serial}`;
+  /* ===== ID ===== */
+  function generateNextId(){
+    const t=new Date();
+    const yy=String(t.getFullYear()).slice(-2);
+    const mm=String(t.getMonth()+1).padStart(2,"0");
+    let last=loadIdCounter(); if(typeof last!=="number"||isNaN(last)) last=0;
+    last+=1; saveIdCounter(last);
+    return `HNDR-${yy}-${mm}-${String(last).padStart(4,"0")}`;
   }
 
-  function getStatusClass(status) {
-    switch (status) {
+  function getStatusClass(s){
+    switch(s){
       case "Pending": return "status-badge status-pending";
       case "Completed": return "status-badge status-completed";
       case "Delayed": return "status-badge status-delayed";
@@ -1247,657 +840,575 @@
     }
   }
 
-  /* =========================
-     UI Helpers
-  ========================= */
-  function setSelectOptions(select, values, includeEmpty, emptyLabel) {
-    const current = select.value;
-    select.innerHTML = "";
-    if (includeEmpty) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = emptyLabel || "All";
-      select.appendChild(opt);
+  /* ===== UI Helpers ===== */
+  function setSelectOptions(select,values,includeEmpty,emptyLabel){
+    const cur=select.value;
+    select.innerHTML="";
+    if(includeEmpty){
+      const o=document.createElement("option"); o.value=""; o.textContent=emptyLabel||"All"; select.appendChild(o);
     }
-    values.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      select.appendChild(opt);
+    values.forEach(v=>{
+      const o=document.createElement("option"); o.value=v; o.textContent=v; select.appendChild(o);
     });
-    if (current && values.includes(current)) select.value = current;
+    if(cur && values.includes(cur)) select.value=cur;
   }
 
-  function refreshUserSelectOptions() {
-    const names = users.map(u => u.name);
-
-    setSelectOptions(document.getElementById("filter-from"), names, true, "All");
-    setSelectOptions(document.getElementById("filter-to"), names, true, "All");
-
-    if (inputTo && inputActionBy) {
-      setSelectOptions(inputTo, names, false);
-      setSelectOptions(inputActionBy, names, false);
+  function refreshUserSelectOptions(){
+    const names=users.map(u=>u.name);
+    setSelectOptions(document.getElementById("filter-from"),names,true,"All");
+    setSelectOptions(document.getElementById("filter-to"),names,true,"All");
+    if(inputTo && inputActionBy){
+      setSelectOptions(inputTo,names,false);
+      setSelectOptions(inputActionBy,names,false);
     }
-
     fillAccountEmployeeOptions();
   }
 
-  // From (new handover) limited to logged-in employee, if linked
-  function setupFromForNewHandover() {
-    if (!inputFrom) return;
-
-    const acc = getLoggedInAccount();
-    const linkedName = (acc?.employeeName || "").trim();
-
-    inputFrom.innerHTML = "";
-
-    if (linkedName) {
-      const opt = document.createElement("option");
-      opt.value = linkedName;
-      opt.textContent = linkedName;
-      inputFrom.appendChild(opt);
-      inputFrom.value = linkedName;
-      inputFrom.setAttribute("disabled", "disabled");
+  function setupFromForNewHandover(){
+    const acc=getLoggedInAccount();
+    const linked=(acc?.employeeName||"").trim();
+    inputFrom.innerHTML="";
+    if(linked){
+      const o=document.createElement("option"); o.value=linked; o.textContent=linked;
+      inputFrom.appendChild(o);
+      inputFrom.value=linked;
+      inputFrom.setAttribute("disabled","disabled");
       return;
     }
-
-    // If no linked employee name (rare), allow select
-    const names = users.map(u => u.name);
-    setSelectOptions(inputFrom, names, false);
-    if (names.length > 0) inputFrom.value = names[0];
+    const names=users.map(u=>u.name);
+    setSelectOptions(inputFrom,names,false);
+    if(names.length>0) inputFrom.value=names[0];
     inputFrom.removeAttribute("disabled");
   }
 
-  function showLoginPage() {
-    document.getElementById("login-page").style.display = "flex";
-    document.getElementById("app-shell").style.display = "none";
+  function showLoginPage(){ document.getElementById("login-page").style.display="flex"; document.getElementById("app-shell").style.display="none"; }
+  function showApp(){ document.getElementById("login-page").style.display="none"; document.getElementById("app-shell").style.display="flex"; updateCurrentUserLabel(); updateTopbarUser(); }
+
+  function updateCurrentUserLabel(){
+    const el=document.getElementById("current-user-label");
+    const acc=getLoggedInAccount();
+    el.textContent=acc?`Logged in as: ${acc.username} (${acc.role||"User"})`:"Not logged in";
+  }
+  function updateTopbarUser(){
+    const el=document.getElementById("topbar-user");
+    const acc=getLoggedInAccount();
+    el.textContent=acc?`${acc.username} (${acc.role||"User"})`:"Not logged in";
   }
 
-  function showApp() {
-    document.getElementById("login-page").style.display = "none";
-    document.getElementById("app-shell").style.display = "flex";
-    updateCurrentUserLabel();
-    updateTopbarUser();
-  }
+  /* ===== Compact Action By Renderer ===== */
+  function renderActionByBadges(h,empName){
+    const names=uniqueNames(getActionByArray(h));
+    const maxShow=2;
+    const visible=names.slice(0,maxShow);
+    const remaining=names.length-visible.length;
 
-  function updateCurrentUserLabel() {
-    const label = document.getElementById("current-user-label");
-    const acc = getLoggedInAccount();
-    if (!acc) label.textContent = "Not logged in";
-    else label.textContent = `Logged in as: ${acc.username} (${acc.role || "User"})`;
-  }
+    const assigned=isUserAssigned(h,empName);
+    const created=isCreator(h,empName);
 
-  function updateTopbarUser() {
-    const el = document.getElementById("topbar-user");
-    const acc = getLoggedInAccount();
-    if (!el) return;
-    if (!acc) { el.textContent = "Not logged in"; return; }
-    el.textContent = `${acc.username} (${acc.role || "User"})`;
-  }
-
-  /* =========================
-     Action By Compact Renderer
-  ========================= */
-  function renderActionByBadges(h, empName) {
-    const names = uniqueNames(getActionByArray(h));
-    const maxShow = 2;
-    const visible = names.slice(0, maxShow);
-    const remaining = names.length - visible.length;
-
-    const assignedToUser = isUserAssigned(h, empName);
-    const createdByUser = isCreator(h, empName);
-
-    const tooltipAll = names.join(", ");
-
-    let html = `<span class="actionby-badges" title="${tooltipAll.replace(/"/g, "&quot;")}">`;
-
-    visible.forEach(n => {
-      html += `<span class="badge text-bg-light border" title="${n.replace(/"/g, "&quot;")}">${n}</span>`;
-    });
-
-    if (remaining > 0) {
-      html += `<span class="badge text-bg-secondary" title="${tooltipAll.replace(/"/g, "&quot;")}">+${remaining}</span>`;
-    }
-
-    if (assignedToUser) {
-      html += `<span class="badge bg-primary-subtle text-primary" title="Assigned to you">Assigned</span>`;
-    }
-    if (createdByUser) {
-      html += `<span class="badge bg-secondary-subtle text-secondary" title="Created by you">Created</span>`;
-    }
-
-    html += `</span>`;
+    const tooltip=names.join(", ");
+    let html=`<span class="actionby-badges" title="${tooltip.replace(/"/g,"&quot;")}">`;
+    visible.forEach(n=>{ html+=`<span class="badge text-bg-light border" title="${n.replace(/"/g,"&quot;")}">${n}</span>`; });
+    if(remaining>0) html+=`<span class="badge text-bg-secondary" title="${tooltip.replace(/"/g,"&quot;")}">+${remaining}</span>`;
+    if(assigned) html+=`<span class="badge bg-primary-subtle text-primary" title="Assigned to you">Assigned</span>`;
+    if(created) html+=`<span class="badge bg-secondary-subtle text-secondary" title="Created by you">Created</span>`;
+    html+=`</span>`;
     return html;
   }
 
-  /* =========================
-     Tables
-  ========================= */
-  function renderTable() {
-    const tbody = document.getElementById("handover-tbody");
-    tbody.innerHTML = "";
+  /* ===== Filters (Active list only) ===== */
+  function applyFilters(){
+    const from=document.getElementById("filter-from").value;
+    const to=document.getElementById("filter-to").value;
+    const status=document.getElementById("filter-status").value;
+    const priority=document.getElementById("filter-priority").value;
+    const dateFrom=document.getElementById("filter-date-from").value;
+    const dateTo=document.getElementById("filter-date-to").value;
+    const search=document.getElementById("filter-search").value.toLowerCase();
 
-    const acc = getLoggedInAccount();
-    const empName = (acc?.employeeName || "").trim();
-    const isAdmin = acc && acc.role === "Admin";
+    const base=getVisibleActiveHandovers(); // active only
 
-    filteredHandovers.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-      const canEdit = canEditHandover(h);
+    filteredActiveHandovers=base.filter(h=>{
+      let ok=true;
+      if(from && (h.from||"")!==from) ok=false;
+      if(to && (h.to||"")!==to) ok=false;
+      if(status && (h.status||"")!==status) ok=false;
+      if(priority && (h.priority||"")!==priority) ok=false;
+      if(dateFrom && (h.date||"")<dateFrom) ok=false;
+      if(dateTo && (h.date||"")>dateTo) ok=false;
+      if(search){
+        const text=((h.id||"")+" "+(h.items||"")+" "+(h.from||"")+" "+(h.to||"")).toLowerCase();
+        if(!text.includes(search)) ok=false;
+      }
+      return ok;
+    });
 
-      let actionsHtml = `
-        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit ? ' / Edit' : ''}">
+    renderActiveTable();
+    renderCompletedTable();
+    updateStatsCards();
+    renderReports();
+  }
+
+  function resetFilters(){
+    document.getElementById("filter-from").value="";
+    document.getElementById("filter-to").value="";
+    document.getElementById("filter-status").value="";
+    document.getElementById("filter-priority").value="";
+    document.getElementById("filter-date-from").value="";
+    document.getElementById("filter-date-to").value="";
+    document.getElementById("filter-search").value="";
+    filteredActiveHandovers=getVisibleActiveHandovers();
+    renderActiveTable();
+    renderCompletedTable();
+    updateStatsCards();
+    renderReports();
+  }
+
+  /* ===== Stats Cards (from ALL visible, including Completed) ===== */
+  function updateStatsCards(){
+    const base=getVisibleAllHandovers();
+    const total=base.length;
+    const pending=base.filter(h=>h.status==="Pending").length;
+    const completed=base.filter(h=>h.status==="Completed").length;
+    const delayed=base.filter(h=>h.status==="Delayed").length;
+
+    document.getElementById("stat-total").textContent=total;
+    document.getElementById("stat-pending").textContent=pending;
+    document.getElementById("stat-completed").textContent=completed;
+    document.getElementById("stat-delayed").textContent=delayed;
+  }
+
+  /* ===== Tables ===== */
+  function renderActiveTable(){
+    const tbody=document.getElementById("handover-tbody");
+    tbody.innerHTML="";
+
+    const acc=getLoggedInAccount();
+    const emp=(acc?.employeeName||"").trim();
+    const isAdmin=acc && acc.role==="Admin";
+
+    filteredActiveHandovers.forEach(h=>{
+      const link=h.attachmentDataUrl || h.attachmentUrl || null;
+      const canEdit=canEditHandover(h);
+
+      // Actions:
+      // - View always
+      // - Mark completed if canEdit
+      // - Soft delete (move to Deleted) admin only
+      let actions=`
+        <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View${canEdit?' / Edit':''}">
           <i class="bi bi-eye"></i>
         </button>
       `;
-
-      if (canEdit) {
-        actionsHtml += `
+      if(canEdit){
+        actions+=`
           <button class="btn btn-sm btn-outline-success btn-complete" data-id="${h.id}" title="Mark as Completed">
             <i class="bi bi-check2"></i>
           </button>
         `;
       }
-
-      if (isAdmin) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+      if(isAdmin){
+        actions+=`
+          <button class="btn btn-sm btn-outline-danger btn-soft-delete" data-id="${h.id}" title="Delete (move to Deleted)">
             <i class="bi bi-trash"></i>
           </button>
         `;
       }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
         <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from || ""}</td>
-        <td>${h.to || ""}</td>
-        <td>${h.items || ""}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status || ""}</span></td>
-        <td>${h.date || ""}</td>
-        <td class="actionby-cell">${renderActionByBadges(h, empName)}</td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                    title="${(h.attachmentName || "Attachment").replace(/"/g, "&quot;")}"
-                    download="${(h.attachmentName || "attachment").replace(/"/g, "&quot;")}">
-                  <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
+        <td>${h.from||""}</td>
+        <td>${h.to||""}</td>
+        <td>${h.items||""}</td>
+        <td>${h.priority||"-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status||""}</span></td>
+        <td>${h.date||""}</td>
+        <td class="actionby-cell">${renderActionByBadges(h,emp)}</td>
+        <td>${
+          link
+            ? `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary"
+                 title="${(h.attachmentName||"Attachment").replace(/"/g,"&quot;")}"
+                 download="${(h.attachmentName||"attachment").replace(/"/g,"&quot;")}">
+                 <i class="bi bi-paperclip"></i>
+               </a>`
+            : `<span class="text-muted" style="font-size:.8rem;">None</span>`
+        }</td>
+        <td>${actions}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    document.getElementById("table-count").textContent = filteredHandovers.length + " records";
+    document.getElementById("table-count").textContent = filteredActiveHandovers.length + " records";
 
-    renderCompletedTable();
-    attachRowActions();
-    updateStats();
-    renderReports();
+    attachActiveRowActions();
   }
 
-  function renderCompletedTable() {
-    const tbody = document.getElementById("completed-tbody");
-    const countEl = document.getElementById("completed-count");
-    if (!tbody) return;
+  function renderCompletedTable(){
+    const tbody=document.getElementById("completed-tbody");
+    const countEl=document.getElementById("completed-count");
+    if(!tbody) return;
+    tbody.innerHTML="";
 
-    tbody.innerHTML = "";
+    const base=getVisibleAllHandovers().filter(h=>h.status==="Completed");
+    const acc=getLoggedInAccount();
+    const emp=(acc?.employeeName||"").trim();
+    const isAdmin=acc && acc.role==="Admin";
 
-    const base = getVisibleHandovers();
-    const completed = base.filter(h => h.status === "Completed");
+    base.forEach(h=>{
+      const link=h.attachmentDataUrl || h.attachmentUrl || null;
 
-    const acc = getLoggedInAccount();
-    const empName = (acc?.employeeName || "").trim();
-    const isAdmin = acc && acc.role === "Admin";
-
-    completed.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-
-      let actionsHtml = `
+      // In completed list: View always; admin can soft delete (move to Deleted)
+      let actions=`
         <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${h.id}" title="View / Edit">
           <i class="bi bi-eye"></i>
         </button>
       `;
-
-      if (isAdmin) {
-        actionsHtml += `
-          <button class="btn btn-sm btn-outline-danger btn-delete-handover" data-id="${h.id}" title="Delete">
+      if(isAdmin){
+        actions+=`
+          <button class="btn btn-sm btn-outline-danger btn-soft-delete" data-id="${h.id}" title="Delete (move to Deleted)">
             <i class="bi bi-trash"></i>
           </button>
         `;
       }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
         <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from || ""}</td>
-        <td>${h.to || ""}</td>
-        <td>${h.items || ""}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status || ""}</span></td>
-        <td>${h.date || ""}</td>
-        <td class="actionby-cell">${renderActionByBadges(h, empName)}</td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                    title="${(h.attachmentName || "Attachment").replace(/"/g, "&quot;")}"
-                    download="${(h.attachmentName || "attachment").replace(/"/g, "&quot;")}">
-                  <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
+        <td>${h.from||""}</td>
+        <td>${h.to||""}</td>
+        <td>${h.items||""}</td>
+        <td>${h.priority||"-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status||""}</span></td>
+        <td>${h.date||""}</td>
+        <td class="actionby-cell">${renderActionByBadges(h,emp)}</td>
+        <td>${
+          link
+            ? `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary"
+                 title="${(h.attachmentName||"Attachment").replace(/"/g,"&quot;")}"
+                 download="${(h.attachmentName||"attachment").replace(/"/g,"&quot;")}">
+                 <i class="bi bi-paperclip"></i>
+               </a>`
+            : `<span class="text-muted" style="font-size:.8rem;">None</span>`
+        }</td>
+        <td>${actions}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    if (countEl) countEl.textContent = completed.length + " records";
+    if(countEl) countEl.textContent = base.length + " records";
+
+    // Re-attach view/delete handlers for completed table
+    attachActiveRowActions();
   }
 
-  function renderDeletedHandovers() {
-    const tbody = document.getElementById("deleted-handover-tbody");
-    const countEl = document.getElementById("deleted-count");
-    if (!tbody) return;
+  function renderDeletedHandovers(){
+    const tbody=document.getElementById("deleted-handover-tbody");
+    const countEl=document.getElementById("deleted-count");
+    if(!tbody) return;
+    tbody.innerHTML="";
 
-    tbody.innerHTML = "";
+    const acc=getLoggedInAccount();
+    const emp=(acc?.employeeName||"").trim();
+    const isAdmin=acc && acc.role==="Admin";
 
-    const acc = getLoggedInAccount();
-    const empName = (acc?.employeeName || "").trim();
-    const isAdmin = acc && acc.role === "Admin";
+    deletedHandovers.forEach(h=>{
+      const link=h.attachmentDataUrl || h.attachmentUrl || null;
 
-    deletedHandovers.forEach(h => {
-      const linkUrl = h.attachmentDataUrl || h.attachmentUrl || null;
-
-      let actionsHtml = "";
-      if (isAdmin) {
-        actionsHtml = `
-          <button class="btn btn-sm btn-outline-success btn-restore-handover" data-id="${h.id}" title="Restore">
+      // Deleted list actions:
+      // - Admin: Restore
+      // - Admin: Permanently delete
+      let actions="";
+      if(isAdmin){
+        actions=`
+          <button class="btn btn-sm btn-outline-success btn-restore" data-id="${h.id}" title="Restore">
             <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-perma-delete" data-id="${h.id}" title="Delete permanently">
+            <i class="bi bi-x-circle"></i>
           </button>
         `;
       }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
         <td><span class="fw-semibold">${h.id}</span></td>
-        <td>${h.from || ""}</td>
-        <td>${h.to || ""}</td>
-        <td>${h.items || ""}</td>
-        <td>${h.priority || "-"}</td>
-        <td><span class="${getStatusClass(h.status)}">${h.status || ""}</span></td>
-        <td>${h.date || ""}</td>
-        <td class="actionby-cell">${renderActionByBadges(h, empName)}</td>
-        <td>
-          ${
-            linkUrl
-              ? `<a href="${linkUrl}" target="_blank" class="btn btn-sm btn-outline-primary"
-                    title="${(h.attachmentName || "Attachment").replace(/"/g, "&quot;")}"
-                    download="${(h.attachmentName || "attachment").replace(/"/g, "&quot;")}">
-                  <i class="bi bi-paperclip"></i>
-                 </a>`
-              : `<span class="text-muted" style="font-size:0.8rem;">None</span>`
-          }
-        </td>
-        <td>${actionsHtml}</td>
+        <td>${h.from||""}</td>
+        <td>${h.to||""}</td>
+        <td>${h.items||""}</td>
+        <td>${h.priority||"-"}</td>
+        <td><span class="${getStatusClass(h.status)}">${h.status||""}</span></td>
+        <td>${h.date||""}</td>
+        <td class="actionby-cell">${renderActionByBadges(h,emp)}</td>
+        <td>${
+          link
+            ? `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary"
+                 title="${(h.attachmentName||"Attachment").replace(/"/g,"&quot;")}"
+                 download="${(h.attachmentName||"attachment").replace(/"/g,"&quot;")}">
+                 <i class="bi bi-paperclip"></i>
+               </a>`
+            : `<span class="text-muted" style="font-size:.8rem;">None</span>`
+        }</td>
+        <td>${actions}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    if (countEl) countEl.textContent = deletedHandovers.length + " records";
-
+    if(countEl) countEl.textContent = deletedHandovers.length + " records";
     attachDeletedRowActions();
   }
 
-  function attachRowActions() {
-    document.querySelectorAll(".btn-view").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
+  function attachActiveRowActions(){
+    document.querySelectorAll(".btn-view").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id=btn.getAttribute("data-id");
         openEditHandover(id);
       });
     });
 
-    document.querySelectorAll(".btn-complete").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        const h = handovers.find(x => x.id === id);
-        if (!h) return;
-        if (!canEditHandover(h)) {
-          alert("You are not allowed to update this handover.");
-          return;
-        }
-        h.status = "Completed";
+    document.querySelectorAll(".btn-complete").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id=btn.getAttribute("data-id");
+        const h=handovers.find(x=>x.id===id);
+        if(!h) return;
+        if(!canEditHandover(h)){ alert("You are not allowed to update this handover."); return; }
+        h.status="Completed";
         saveHandovers();
-        applyFilters();
+
+        // IMPORTANT: Completed must disappear from ACTIVE list for everyone
+        filteredActiveHandovers=getVisibleActiveHandovers();
+        applyFilters(); // re-renders both active & completed
       });
     });
 
-    document.querySelectorAll(".btn-delete-handover").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") {
-          alert("Only Admin can delete handovers.");
-          return;
-        }
-        const id = btn.getAttribute("data-id");
-        const h = handovers.find(x => x.id === id);
-        if (!h) return;
+    document.querySelectorAll(".btn-soft-delete").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const acc=getLoggedInAccount();
+        if(!acc || acc.role!=="Admin"){ alert("Only Admin can delete handovers."); return; }
 
-        const ok = confirm(`Are you sure you want to delete handover "${h.id}"?`);
-        if (!ok) return;
+        const id=btn.getAttribute("data-id");
+        const h=handovers.find(x=>x.id===id);
+        if(!h) return;
 
-        handovers = handovers.filter(x => x.id !== id);
+        const ok=confirm(`Delete handover "${h.id}"?\nThis will move it to Deleted Handovers (you can restore or permanently delete later).`);
+        if(!ok) return;
+
+        handovers=handovers.filter(x=>x.id!==id);
         deletedHandovers.push(h);
 
-        saveHandovers();
-        saveDeletedHandovers();
+        saveHandovers(); saveDeletedHandovers();
 
+        filteredActiveHandovers=getVisibleActiveHandovers();
         applyFilters();
         renderDeletedHandovers();
       });
     });
   }
 
-  function attachDeletedRowActions() {
-    document.querySelectorAll(".btn-restore-handover").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") {
-          alert("Only Admin can restore handovers.");
-          return;
-        }
+  function attachDeletedRowActions(){
+    document.querySelectorAll(".btn-restore").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const acc=getLoggedInAccount();
+        if(!acc || acc.role!=="Admin"){ alert("Only Admin can restore."); return; }
 
-        const id = btn.getAttribute("data-id");
-        const idx = deletedHandovers.findIndex(h => h.id === id);
-        if (idx === -1) return;
+        const id=btn.getAttribute("data-id");
+        const idx=deletedHandovers.findIndex(h=>h.id===id);
+        if(idx===-1) return;
 
-        const h = deletedHandovers[idx];
-        const ok = confirm(`Restore handover "${h.id}" back to main list?`);
-        if (!ok) return;
+        const h=deletedHandovers[idx];
+        const ok=confirm(`Restore "${h.id}" back to main data?`);
+        if(!ok) return;
 
-        deletedHandovers.splice(idx, 1);
+        deletedHandovers.splice(idx,1);
         handovers.push(h);
 
-        saveHandovers();
+        saveHandovers(); saveDeletedHandovers();
+
+        filteredActiveHandovers=getVisibleActiveHandovers();
+        applyFilters();
+        renderDeletedHandovers();
+      });
+    });
+
+    document.querySelectorAll(".btn-perma-delete").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const acc=getLoggedInAccount();
+        if(!acc || acc.role!=="Admin"){ alert("Only Admin can delete permanently."); return; }
+
+        const id=btn.getAttribute("data-id");
+        const h=deletedHandovers.find(x=>x.id===id);
+        if(!h) return;
+
+        const ok=confirm(`PERMANENT DELETE:\n"${h.id}" will be removed forever and cannot be restored.\nContinue?`);
+        if(!ok) return;
+
+        deletedHandovers = deletedHandovers.filter(x=>x.id!==id);
         saveDeletedHandovers();
 
-        filteredHandovers = getVisibleHandovers();
-        applyFilters();
         renderDeletedHandovers();
       });
     });
   }
 
-  /* =========================
-     Filters & Stats
-  ========================= */
-  function applyFilters() {
-    const from = document.getElementById("filter-from").value;
-    const to = document.getElementById("filter-to").value;
-    const status = document.getElementById("filter-status").value;
-    const priority = document.getElementById("filter-priority").value;
-    const dateFrom = document.getElementById("filter-date-from").value;
-    const dateTo = document.getElementById("filter-date-to").value;
-    const search = document.getElementById("filter-search").value.toLowerCase();
+  /* ===== Reports (all visible) ===== */
+  function renderReports(){
+    const base=getVisibleAllHandovers();
+    document.getElementById("rep-total").textContent=base.length;
+    document.getElementById("rep-pending").textContent=base.filter(h=>h.status==="Pending").length;
+    document.getElementById("rep-completed").textContent=base.filter(h=>h.status==="Completed").length;
+    document.getElementById("rep-delayed").textContent=base.filter(h=>h.status==="Delayed").length;
 
-    const base = getVisibleHandovers();
+    const statusCanvas=document.getElementById("reports-status-chart");
+    const userCanvas=document.getElementById("reports-user-chart");
+    if(!statusCanvas||!userCanvas) return;
 
-    filteredHandovers = base.filter(h => {
-      let ok = true;
-      if (from && (h.from || "") !== from) ok = false;
-      if (to && (h.to || "") !== to) ok = false;
-      if (status && (h.status || "") !== status) ok = false;
-      if (priority && (h.priority || "") !== priority) ok = false;
+    const pending=base.filter(h=>h.status==="Pending").length;
+    const inProgress=base.filter(h=>h.status==="In Progress").length;
+    const completed=base.filter(h=>h.status==="Completed").length;
+    const delayed=base.filter(h=>h.status==="Delayed").length;
 
-      if (dateFrom && (h.date || "") < dateFrom) ok = false;
-      if (dateTo && (h.date || "") > dateTo) ok = false;
-
-      if (search) {
-        const text = ((h.id||"") + " " + (h.items||"") + " " + (h.from||"") + " " + (h.to||"")).toLowerCase();
-        if (!text.includes(search)) ok = false;
-      }
-      return ok;
+    if(reportsStatusChart) reportsStatusChart.destroy();
+    reportsStatusChart=new Chart(statusCanvas.getContext("2d"),{
+      type:"bar",
+      data:{ labels:["Pending","In Progress","Completed","Delayed"], datasets:[{label:"Handovers",data:[pending,inProgress,completed,delayed]}] },
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}} }
     });
 
-    renderTable();
-  }
-
-  function resetFilters() {
-    document.getElementById("filter-from").value = "";
-    document.getElementById("filter-to").value = "";
-    document.getElementById("filter-status").value = "";
-    document.getElementById("filter-priority").value = "";
-    document.getElementById("filter-date-from").value = "";
-    document.getElementById("filter-date-to").value = "";
-    document.getElementById("filter-search").value = "";
-    filteredHandovers = getVisibleHandovers();
-    renderTable();
-  }
-
-  function updateStats() {
-    const total = filteredHandovers.length;
-    const pending = filteredHandovers.filter(h => h.status === "Pending").length;
-    const completed = filteredHandovers.filter(h => h.status === "Completed").length;
-    const delayed = filteredHandovers.filter(h => h.status === "Delayed").length;
-
-    document.getElementById("stat-total").textContent = total;
-    document.getElementById("stat-pending").textContent = pending;
-    document.getElementById("stat-completed").textContent = completed;
-    document.getElementById("stat-delayed").textContent = delayed;
-  }
-
-  /* =========================
-     Reports
-  ========================= */
-  function renderReports() {
-    const base = getVisibleHandovers();
-
-    const total = base.length;
-    const pending = base.filter(h => h.status === "Pending").length;
-    const completed = base.filter(h => h.status === "Completed").length;
-    const delayed = base.filter(h => h.status === "Delayed").length;
-    const inProgress = base.filter(h => h.status === "In Progress").length;
-
-    const repTotal = document.getElementById("rep-total");
-    if (!repTotal) return;
-
-    document.getElementById("rep-total").textContent = total;
-    document.getElementById("rep-pending").textContent = pending;
-    document.getElementById("rep-completed").textContent = completed;
-    document.getElementById("rep-delayed").textContent = delayed;
-
-    const statusCanvas = document.getElementById("reports-status-chart");
-    const userCanvas = document.getElementById("reports-user-chart");
-    if (!statusCanvas || !userCanvas) return;
-
-    if (reportsStatusChart) reportsStatusChart.destroy();
-    reportsStatusChart = new Chart(statusCanvas.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: ["Pending", "In Progress", "Completed", "Delayed"],
-        datasets: [{ label: "Handovers", data: [pending, inProgress, completed, delayed] }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-      }
+    const byUser={};
+    base.forEach(h=>{
+      const assignees=uniqueNames(getActionByArray(h));
+      if(assignees.length===0){ byUser["(None)"]=(byUser["(None)"]||0)+1; return; }
+      assignees.forEach(n=>{ byUser[n]=(byUser[n]||0)+1; });
     });
 
-    const byUser = {};
-    base.forEach(h => {
-      const assignees = uniqueNames(getActionByArray(h));
-      if (assignees.length === 0) {
-        byUser["(None)"] = (byUser["(None)"] || 0) + 1;
-        return;
-      }
-      assignees.forEach(name => { byUser[name] = (byUser[name] || 0) + 1; });
-    });
-
-    const userLabels = Object.keys(byUser);
-    const userData = Object.values(byUser);
-
-    if (reportsUserChart) reportsUserChart.destroy();
-    reportsUserChart = new Chart(userCanvas.getContext("2d"), {
-      type: "bar",
-      data: { labels: userLabels, datasets: [{ label: "Handovers", data: userData }] },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-      }
+    const labels=Object.keys(byUser), data=Object.values(byUser);
+    if(reportsUserChart) reportsUserChart.destroy();
+    reportsUserChart=new Chart(userCanvas.getContext("2d"),{
+      type:"bar",
+      data:{ labels, datasets:[{label:"Handovers",data}] },
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}} }
     });
   }
 
-  /* =========================
-     Excel Export
-  ========================= */
-  function exportHandoverExcel() {
-    const source = (filteredHandovers && filteredHandovers.length > 0) ? filteredHandovers : getVisibleHandovers();
+  /* ===== Excel Export (exports ALL visible by default; if you want active only, change to getVisibleActiveHandovers()) ===== */
+  function exportHandoverExcel(){
+    const source=getVisibleAllHandovers();
 
-    const data = source.map(h => ({
-      "HNDR ID": h.id,
-      "From": h.from,
-      "To": h.to,
-      "Items": h.items,
-      "Long Description": h.longDescription || "",
-      "Priority": h.priority || "",
-      "Status": h.status || "",
-      "Date": h.date || "",
-      "Action By": uniqueNames(getActionByArray(h)).join(", "),
-      "Created By": h.createdBy || "",
-      "Attachment Name": h.attachmentName || "None",
-      "Attachment Link": h.attachmentDataUrl || h.attachmentUrl || "",
+    const data=source.map(h=>({
+      "HNDR ID":h.id,
+      "From":h.from,
+      "To":h.to,
+      "Items":h.items,
+      "Long Description":h.longDescription||"",
+      "Priority":h.priority||"",
+      "Status":h.status||"",
+      "Date":h.date||"",
+      "Action By":uniqueNames(getActionByArray(h)).join(", "),
+      "Created By":h.createdBy||"",
+      "Attachment Name":h.attachmentName||"None",
+      "Attachment Link":h.attachmentDataUrl||h.attachmentUrl||""
     }));
 
-    if (data.length === 0) { alert("No records to export."); return; }
-    if (typeof XLSX === "undefined") { alert("XLSX library is not loaded."); return; }
+    if(data.length===0){ alert("No records to export."); return; }
+    if(typeof XLSX==="undefined"){ alert("XLSX library is not loaded."); return; }
 
-    const ws = XLSX.utils.json_to_sheet(data);
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Handover List");
-    XLSX.writeFile(wb, "Handover_List.xlsx");
+    const ws=XLSX.utils.json_to_sheet(data);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Handovers");
+    XLSX.writeFile(wb,"Handover_List.xlsx");
   }
 
-  function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  function readFileAsDataUrl(file){
+    return new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>resolve(r.result);
+      r.onerror=reject;
+      r.readAsDataURL(file);
     });
   }
 
-  /* =========================
-     Sidebar Navigation (Admin Pages)
-  ========================= */
-  function setActiveView(view, save = true) {
-    const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-    const views = document.querySelectorAll(".view-section");
+  /* ===== Sidebar Navigation ===== */
+  function setActiveView(view,save=true){
+    const navLinks=document.querySelectorAll(".sidebar-nav .nav-link");
+    const views=document.querySelectorAll(".view-section");
 
-    if (view === "admin-users" || view === "deleted-handovers") {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") {
-        alert("Only Admin can access this page.");
-        return;
-      }
+    if(view==="admin-users"||view==="deleted-handovers"){
+      const acc=getLoggedInAccount();
+      if(!acc||acc.role!=="Admin"){ alert("Only Admin can access this page."); return; }
     }
 
-    navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("data-view") === view));
-    views.forEach(section => section.classList.toggle("d-none", section.getAttribute("data-view") !== view));
-
-    if (save) localStorage.setItem("warehouseActiveView", view);
+    navLinks.forEach(l=>l.classList.toggle("active",l.getAttribute("data-view")===view));
+    views.forEach(s=>s.classList.toggle("d-none",s.getAttribute("data-view")!==view));
+    if(save) localStorage.setItem("warehouseActiveView",view);
   }
 
-  function initSidebarNavigation() {
-    document.querySelectorAll(".sidebar-nav .nav-link").forEach(link => {
-      link.addEventListener("click", e => {
+  function initSidebarNavigation(){
+    document.querySelectorAll(".sidebar-nav .nav-link").forEach(link=>{
+      link.addEventListener("click",e=>{
         e.preventDefault();
-        const view = link.getAttribute("data-view");
-        if (!view) return;
-        setActiveView(view, true);
+        const view=link.getAttribute("data-view");
+        if(view) setActiveView(view,true);
       });
     });
   }
 
-  /* =========================
-     Employees (Users)
-  ========================= */
-  function renderUsers() {
-    const tbody = document.getElementById("users-tbody");
-    tbody.innerHTML = "";
-
-    users.forEach((u, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
+  /* ===== Employees (Users) ===== */
+  function renderUsers(){
+    const tbody=document.getElementById("users-tbody");
+    tbody.innerHTML="";
+    users.forEach((u,i)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${i+1}</td>
         <td>${u.name}</td>
-        <td>${u.role || ""}</td>
-        <td>${u.email || ""}</td>
+        <td>${u.role||""}</td>
+        <td>${u.email||""}</td>
         <td>
-          <button class="btn btn-sm btn-outline-secondary btn-edit-user" data-index="${index}">
+          <button class="btn btn-sm btn-outline-secondary btn-edit-user" data-index="${i}">
             <i class="bi bi-pencil"></i>
           </button>
         </td>
       `;
       tbody.appendChild(tr);
     });
-
-    document.querySelectorAll(".btn-edit-user").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-index"), 10);
+    document.querySelectorAll(".btn-edit-user").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const idx=parseInt(btn.getAttribute("data-index"),10);
         openEditUser(idx);
       });
     });
   }
 
-  function initUserForm() {
-    const form = document.getElementById("user-form");
-    const nameInput = document.getElementById("user-name");
-    const roleInput = document.getElementById("user-role");
-    const emailInput = document.getElementById("user-email");
+  function initUserForm(){
+    const form=document.getElementById("user-form");
+    const nameInput=document.getElementById("user-name");
+    const roleInput=document.getElementById("user-role");
+    const emailInput=document.getElementById("user-email");
 
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit",e=>{
       e.preventDefault();
-      const name = nameInput.value.trim();
-      const role = roleInput.value.trim();
-      const email = emailInput.value.trim();
-      if (!name) return;
-
-      users.push({ name, role, email });
+      const name=nameInput.value.trim();
+      if(!name) return;
+      users.push({name,role:roleInput.value.trim(),email:emailInput.value.trim()});
       saveUsers();
       renderUsers();
       refreshUserSelectOptions();
-
-      nameInput.value = "";
-      roleInput.value = "";
-      emailInput.value = "";
+      nameInput.value=""; roleInput.value=""; emailInput.value="";
     });
   }
 
-  function initUserModal() {
-    userModal = new bootstrap.Modal(document.getElementById("user-modal"));
-    userEditForm = document.getElementById("user-edit-form");
-    editUserNameInput = document.getElementById("edit-user-name");
-    editUserRoleInput = document.getElementById("edit-user-role");
-    editUserEmailInput = document.getElementById("edit-user-email");
+  function initUserModal(){
+    userModal=new bootstrap.Modal(document.getElementById("user-modal"));
+    userEditForm=document.getElementById("user-edit-form");
+    editUserNameInput=document.getElementById("edit-user-name");
+    editUserRoleInput=document.getElementById("edit-user-role");
+    editUserEmailInput=document.getElementById("edit-user-email");
 
-    userEditForm.addEventListener("submit", e => {
+    userEditForm.addEventListener("submit",e=>{
       e.preventDefault();
-      if (editingUserIndex === null) return;
-      const name = editUserNameInput.value.trim();
-      const role = editUserRoleInput.value.trim();
-      const email = editUserEmailInput.value.trim();
-      if (!name) return;
-
-      users[editingUserIndex] = { name, role, email };
+      if(editingUserIndex===null) return;
+      const name=editUserNameInput.value.trim();
+      if(!name) return;
+      users[editingUserIndex]={name,role:editUserRoleInput.value.trim(),email:editUserEmailInput.value.trim()};
       saveUsers();
       renderUsers();
       refreshUserSelectOptions();
@@ -1905,42 +1416,34 @@
     });
   }
 
-  function openEditUser(index) {
-    const u = users[index];
-    if (!u) return;
-    editingUserIndex = index;
-
-    editUserNameInput.value = u.name;
-    editUserRoleInput.value = u.role || "";
-    editUserEmailInput.value = u.email || "";
+  function openEditUser(index){
+    const u=users[index]; if(!u) return;
+    editingUserIndex=index;
+    editUserNameInput.value=u.name;
+    editUserRoleInput.value=u.role||"";
+    editUserEmailInput.value=u.email||"";
     userModal.show();
   }
 
-  /* =========================
-     Admin Accounts
-  ========================= */
-  function renderAccounts() {
-    const tbody = document.getElementById("accounts-tbody");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-    accounts.forEach((acc, index) => {
-      const badgeClass = acc.status === "Disabled"
-        ? "bg-secondary-subtle text-secondary"
-        : "bg-success-subtle text-success";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${acc.username}</td>
-        <td>${acc.employeeName || "-"}</td>
-        <td>${acc.role || ""}</td>
-        <td><span class="badge rounded-pill ${badgeClass}">${acc.status || "Active"}</span></td>
+  /* ===== Admin Accounts ===== */
+  function renderAccounts(){
+    const tbody=document.getElementById("accounts-tbody");
+    if(!tbody) return;
+    tbody.innerHTML="";
+    accounts.forEach((a,i)=>{
+      const badge=a.status==="Disabled"?"bg-secondary-subtle text-secondary":"bg-success-subtle text-success";
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${i+1}</td>
+        <td>${a.username}</td>
+        <td>${a.employeeName||"-"}</td>
+        <td>${a.role||""}</td>
+        <td><span class="badge rounded-pill ${badge}">${a.status||"Active"}</span></td>
         <td>
-          <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${index}">
+          <button class="btn btn-sm btn-outline-secondary btn-edit-account" data-index="${i}">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-outline-danger btn-delete-account" data-index="${index}">
+          <button class="btn btn-sm btn-outline-danger btn-delete-account" data-index="${i}">
             <i class="bi bi-trash"></i>
           </button>
         </td>
@@ -1948,553 +1451,410 @@
       tbody.appendChild(tr);
     });
 
-    document.querySelectorAll(".btn-edit-account").forEach(btn => {
-      btn.addEventListener("click", () => openEditAccount(parseInt(btn.getAttribute("data-index"), 10)));
+    document.querySelectorAll(".btn-edit-account").forEach(btn=>{
+      btn.addEventListener("click",()=>openEditAccount(parseInt(btn.getAttribute("data-index"),10)));
     });
 
-    document.querySelectorAll(".btn-delete-account").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-index"), 10);
-        const acc = accounts[idx];
-        if (!acc) return;
-
-        const ok = confirm(`Are you sure you want to delete account "${acc.username}"?`);
-        if (!ok) return;
-
-        accounts.splice(idx, 1);
+    document.querySelectorAll(".btn-delete-account").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const idx=parseInt(btn.getAttribute("data-index"),10);
+        const acc=accounts[idx]; if(!acc) return;
+        if(!confirm(`Delete account "${acc.username}"?`)) return;
+        accounts.splice(idx,1);
         saveAccounts();
         renderAccounts();
-
-        if (acc.username === getLoggedInUsername()) {
+        if(acc.username===getLoggedInUsername()){
           setLoggedInUsername("");
           showLoginPage();
-          updateCurrentUserLabel();
+          updateCurrentUserLabel(); updateTopbarUser();
         }
       });
     });
   }
 
-  function fillAccountEmployeeOptions() {
-    if (!accountEmployeeSelect) return;
-    accountEmployeeSelect.innerHTML = "";
-
-    const optNone = document.createElement("option");
-    optNone.value = "";
-    optNone.textContent = "(No linked employee)";
-    accountEmployeeSelect.appendChild(optNone);
-
-    users.forEach(u => {
-      const opt = document.createElement("option");
-      opt.value = u.name;
-      opt.textContent = u.name;
-      accountEmployeeSelect.appendChild(opt);
+  function fillAccountEmployeeOptions(){
+    if(!accountEmployeeSelect) return;
+    accountEmployeeSelect.innerHTML="";
+    const none=document.createElement("option"); none.value=""; none.textContent="(No linked employee)";
+    accountEmployeeSelect.appendChild(none);
+    users.forEach(u=>{
+      const o=document.createElement("option"); o.value=u.name; o.textContent=u.name;
+      accountEmployeeSelect.appendChild(o);
     });
   }
 
-  function initAccountModal() {
-    accountModal = new bootstrap.Modal(document.getElementById("account-modal"));
-    accountForm = document.getElementById("account-form");
-    accountUsernameInput = document.getElementById("account-username");
-    accountEmployeeSelect = document.getElementById("account-employee");
-    accountRoleSelect = document.getElementById("account-role");
-    accountStatusSelect = document.getElementById("account-status");
-    accountPasswordInput = document.getElementById("account-password");
+  function initAccountModal(){
+    accountModal=new bootstrap.Modal(document.getElementById("account-modal"));
+    accountForm=document.getElementById("account-form");
+    accountUsernameInput=document.getElementById("account-username");
+    accountEmployeeSelect=document.getElementById("account-employee");
+    accountRoleSelect=document.getElementById("account-role");
+    accountStatusSelect=document.getElementById("account-status");
+    accountPasswordInput=document.getElementById("account-password");
 
     fillAccountEmployeeOptions();
 
-    const btnAdd = document.getElementById("btn-add-account");
-    if (btnAdd) {
-      btnAdd.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc || acc.role !== "Admin") { alert("Only Admin can add accounts."); return; }
-        isEditAccount = false;
-        editingAccountIndex = null;
-        accountForm.reset();
-        fillAccountEmployeeOptions();
-        accountStatusSelect.value = "Active";
-        accountPasswordInput.value = "";
-        accountModal.show();
-      });
-    }
+    document.getElementById("btn-add-account").addEventListener("click",()=>{
+      const logged=getLoggedInAccount();
+      if(!logged||logged.role!=="Admin"){ alert("Only Admin can add accounts."); return; }
+      isEditAccount=false; editingAccountIndex=null;
+      accountForm.reset();
+      fillAccountEmployeeOptions();
+      accountStatusSelect.value="Active";
+      accountPasswordInput.value="";
+      accountModal.show();
+    });
 
-    accountForm.addEventListener("submit", e => {
+    accountForm.addEventListener("submit",e=>{
       e.preventDefault();
+      const logged=getLoggedInAccount();
+      if(!logged||logged.role!=="Admin"){ alert("Only Admin can edit accounts."); return; }
 
-      const accLogged = getLoggedInAccount();
-      if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
+      const username=accountUsernameInput.value.trim();
+      if(!username) return;
 
-      const username = accountUsernameInput.value.trim();
-      const employeeName = accountEmployeeSelect.value || "";
-      const role = accountRoleSelect.value || "User";
-      const status = accountStatusSelect.value || "Active";
-      const rawPassword = (accountPasswordInput.value || "").trim();
+      const employeeName=accountEmployeeSelect.value||"";
+      const role=accountRoleSelect.value||"User";
+      const status=accountStatusSelect.value||"Active";
+      const pass=(accountPasswordInput.value||"").trim();
 
-      if (!username) return;
-
-      if (isEditAccount && editingAccountIndex !== null) {
-        const existing = accounts[editingAccountIndex];
-        accounts[editingAccountIndex] = {
-          ...existing,
-          username,
-          employeeName,
-          role,
-          status,
-          password: rawPassword ? rawPassword : existing.password,
-        };
-      } else {
-        const password = rawPassword || "1234";
-        accounts.push({ username, employeeName, role, status, password });
+      if(isEditAccount && editingAccountIndex!==null){
+        const existing=accounts[editingAccountIndex];
+        accounts[editingAccountIndex]={...existing,username,employeeName,role,status,password:pass?pass:existing.password};
+      }else{
+        accounts.push({username,employeeName,role,status,password:pass||"1234"});
       }
 
       saveAccounts();
       renderAccounts();
-      accountPasswordInput.value = "";
+      accountPasswordInput.value="";
       accountModal.hide();
     });
   }
 
-  function openEditAccount(index) {
-    const acc = accounts[index];
-    if (!acc) return;
+  function openEditAccount(index){
+    const logged=getLoggedInAccount();
+    if(!logged||logged.role!=="Admin"){ alert("Only Admin can edit accounts."); return; }
 
-    const accLogged = getLoggedInAccount();
-    if (!accLogged || accLogged.role !== "Admin") { alert("Only Admin can edit accounts."); return; }
-
-    isEditAccount = true;
-    editingAccountIndex = index;
+    const a=accounts[index]; if(!a) return;
+    isEditAccount=true; editingAccountIndex=index;
 
     fillAccountEmployeeOptions();
-    accountUsernameInput.value = acc.username;
-    accountEmployeeSelect.value = acc.employeeName || "";
-    accountRoleSelect.value = acc.role || "User";
-    accountStatusSelect.value = acc.status || "Active";
-    accountPasswordInput.value = "";
+    accountUsernameInput.value=a.username;
+    accountEmployeeSelect.value=a.employeeName||"";
+    accountRoleSelect.value=a.role||"User";
+    accountStatusSelect.value=a.status||"Active";
+    accountPasswordInput.value="";
     accountModal.show();
   }
 
-  /* =========================
-     Handover Modal (Field-level Permissions)
-  ========================= */
-  function setHandoverFormPermissions(h) {
-    // default enable/disable for edit vs view is based on canEditHandover
-    const canEdit = h ? canEditHandover(h) : true;
+  /* ===== Handover Modal Permissions ===== */
+  function setHandoverFormPermissions(h){
+    const canEdit=h?canEditHandover(h):true;
 
-    const fieldsGeneral = [inputTo, inputItems, inputLongDesc, inputPriority, inputStatus, inputDate, attachmentInput];
-    fieldsGeneral.forEach(el => {
-      if (!el) return;
-      if (!canEdit) el.setAttribute("disabled", "disabled");
+    [inputTo,inputItems,inputLongDesc,inputPriority,inputStatus,inputDate,attachmentInput].forEach(el=>{
+      if(!el) return;
+      if(!canEdit) el.setAttribute("disabled","disabled");
       else el.removeAttribute("disabled");
     });
 
-    if (inputFrom) inputFrom.setAttribute("disabled", "disabled");
+    if(inputFrom) inputFrom.setAttribute("disabled","disabled");
 
-    // ActionBy: only Admin or Creator
-    const allowActionBy = h ? canEditActionBy(h) : true;
-
-    if (inputActionBy) {
-      if (!canEdit || !allowActionBy) inputActionBy.setAttribute("disabled", "disabled");
+    const allowActionBy=h?canEditActionBy(h):true;
+    if(inputActionBy){
+      if(!canEdit||!allowActionBy) inputActionBy.setAttribute("disabled","disabled");
       else inputActionBy.removeAttribute("disabled");
     }
-
-    if (includeMyNameCheckbox) {
-      if (!canEdit || !allowActionBy) includeMyNameCheckbox.setAttribute("disabled", "disabled");
+    if(includeMyNameCheckbox){
+      if(!canEdit||!allowActionBy) includeMyNameCheckbox.setAttribute("disabled","disabled");
       else includeMyNameCheckbox.removeAttribute("disabled");
     }
 
-    if (handoverSaveBtn) handoverSaveBtn.style.display = canEdit ? "inline-block" : "none";
+    handoverSaveBtn.style.display=canEdit?"inline-block":"none";
   }
 
-  function initHandoverModal() {
-    handoverModal = new bootstrap.Modal(document.getElementById("handover-modal"));
-    handoverForm = document.getElementById("handover-form");
-    modalTitleEl = document.getElementById("handover-modal-title");
+  /* ===== Handover Modal ===== */
+  function initHandoverModal(){
+    handoverModal=new bootstrap.Modal(document.getElementById("handover-modal"));
+    handoverForm=document.getElementById("handover-form");
+    modalTitleEl=document.getElementById("handover-modal-title");
+    handoverSaveBtn=document.getElementById("handover-save-btn");
 
-    inputId = document.getElementById("handover-id");
-    inputFrom = document.getElementById("handover-from");
-    inputTo = document.getElementById("handover-to");
-    inputItems = document.getElementById("handover-items");
-    inputLongDesc = document.getElementById("handover-long-desc");
-    inputPriority = document.getElementById("handover-priority");
-    inputStatus = document.getElementById("handover-status");
-    inputDate = document.getElementById("handover-date");
-    inputActionBy = document.getElementById("handover-action-by");
-    attachmentInput = document.getElementById("handover-attachment");
-    currentAttachmentInfo = document.getElementById("current-attachment-info");
-    handoverSaveBtn = document.getElementById("handover-save-btn");
-    includeMyNameCheckbox = document.getElementById("include-my-name");
+    inputId=document.getElementById("handover-id");
+    inputFrom=document.getElementById("handover-from");
+    inputTo=document.getElementById("handover-to");
+    inputItems=document.getElementById("handover-items");
+    inputLongDesc=document.getElementById("handover-long-desc");
+    inputPriority=document.getElementById("handover-priority");
+    inputStatus=document.getElementById("handover-status");
+    inputDate=document.getElementById("handover-date");
+    inputActionBy=document.getElementById("handover-action-by");
+    attachmentInput=document.getElementById("handover-attachment");
+    currentAttachmentInfo=document.getElementById("current-attachment-info");
+    includeMyNameCheckbox=document.getElementById("include-my-name");
 
     refreshUserSelectOptions();
 
-    // Checkbox behavior: user can include their name or not
-    includeMyNameCheckbox.addEventListener("change", () => {
-      const acc = getLoggedInAccount();
-      const myName = (acc?.employeeName || "").trim();
-      if (!myName) return;
-
-      const selected = Array.from(inputActionBy.selectedOptions).map(o => o.value);
-      const set = new Set(selected);
-
-      if (includeMyNameCheckbox.checked) set.add(myName);
-      else set.delete(myName);
-
-      setMultiSelectValues(inputActionBy, Array.from(set));
+    includeMyNameCheckbox.addEventListener("change",()=>{
+      const acc=getLoggedInAccount();
+      const my=(acc?.employeeName||"").trim();
+      if(!my) return;
+      const sel=Array.from(inputActionBy.selectedOptions).map(o=>o.value);
+      const set=new Set(sel);
+      if(includeMyNameCheckbox.checked) set.add(my); else set.delete(my);
+      setMultiSelectValues(inputActionBy,Array.from(set));
     });
 
-    const openButtons = [
-      document.getElementById("btn-add-handover"),
-      document.getElementById("btn-add-handover-2"),
-    ].filter(Boolean);
+    document.getElementById("btn-add-handover").addEventListener("click",()=>openNewHandover());
 
-    openButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const acc = getLoggedInAccount();
-        if (!acc) { alert("You must be logged in to create a handover."); return; }
-        if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-        if (acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
-
-        isEditMode = false;
-        editingId = null;
-        editingReadOnly = false;
-
-        handoverForm.reset();
-
-        inputId.value = generateNextId();
-        inputDate.value = new Date().toISOString().slice(0, 10);
-        currentAttachmentInfo.textContent = "No attachment";
-        attachmentInput.value = "";
-        inputLongDesc.value = "";
-        inputPriority.value = "P3";
-        inputStatus.value = "Pending";
-
-        refreshUserSelectOptions();
-        setupFromForNewHandover();
-
-        if (users.length > 0) inputTo.value = users[0].name;
-
-        // Action By defaults:
-        // - user can include their name or not (checkbox)
-        includeMyNameCheckbox.checked = true;
-
-        const myName = (acc.employeeName || "").trim();
-        if (myName) setMultiSelectValues(inputActionBy, [myName]);
-        else if (users.length > 0) setMultiSelectValues(inputActionBy, [users[0].name]);
-
-        setHandoverFormPermissions(null);
-        modalTitleEl.textContent = "New Handover";
-        handoverModal.show();
-      });
-    });
-
-    handoverForm.addEventListener("submit", async e => {
+    handoverForm.addEventListener("submit",async e=>{
       e.preventDefault();
 
-      const acc = getLoggedInAccount();
-      if (!acc) { alert("You must be logged in to save."); return; }
-      if (acc.status === "Disabled") { alert("Your account is disabled."); return; }
-      if (!isEditMode && acc.role === "Viewer") { alert("Viewer accounts cannot create handovers."); return; }
+      const acc=getLoggedInAccount();
+      if(!acc){ alert("You must be logged in to save."); return; }
+      if(acc.status==="Disabled"){ alert("Your account is disabled."); return; }
+      if(!isEditMode && acc.role==="Viewer"){ alert("Viewer accounts cannot create handovers."); return; }
 
-      const from = inputFrom.value;
-      const to = inputTo.value;
-      const items = inputItems.value;
-      const longDescription = inputLongDesc.value;
-      const priority = inputPriority.value;
-      const status = inputStatus.value;
-      const date = inputDate.value;
+      const from=inputFrom.value;
+      const to=inputTo.value;
+      const items=inputItems.value;
+      const longDescription=inputLongDesc.value;
+      const priority=inputPriority.value;
+      const status=inputStatus.value;
+      const date=inputDate.value;
 
-      const myName = (acc.employeeName || "").trim();
+      const my=(acc.employeeName||"").trim();
 
-      // Get selected action by
-      let actionBy = Array.from(inputActionBy.selectedOptions).map(o => o.value);
-      actionBy = uniqueNames(actionBy);
+      let actionBy=uniqueNames(Array.from(inputActionBy.selectedOptions).map(o=>o.value));
+      if(my){
+        if(includeMyNameCheckbox.checked){ if(!actionBy.includes(my)) actionBy.push(my); }
+        else actionBy=actionBy.filter(x=>x!==my);
+      }
+      if(actionBy.length===0){ alert("Please select at least one employee in Action By (or enable 'Include my name')."); return; }
 
-      // Respect checkbox: include my name or not
-      if (myName) {
-        if (includeMyNameCheckbox.checked) {
-          if (!actionBy.includes(myName)) actionBy.push(myName);
-        } else {
-          actionBy = actionBy.filter(x => x !== myName);
+      const file=attachmentInput.files[0]||null;
+
+      let attachmentName=null,attachmentType=null,attachmentSize=null,attachmentDataUrl=null;
+
+      if(isEditMode){
+        const cur=handovers.find(h=>h.id===editingId);
+        if(cur){
+          attachmentName=cur.attachmentName||null;
+          attachmentType=cur.attachmentType||null;
+          attachmentSize=cur.attachmentSize||null;
+          attachmentDataUrl=cur.attachmentDataUrl||cur.attachmentUrl||null;
         }
       }
 
-      if (actionBy.length === 0) {
-        alert("Please select at least one employee in Action By (or enable 'Include my name').");
-        return;
+      if(file){
+        if(file.size>MAX_ATTACHMENT_SIZE){ alert("Attachment is too large to save in the browser (max ~3MB)."); return; }
+        attachmentName=file.name;
+        attachmentType=file.type||null;
+        attachmentSize=file.size;
+        attachmentDataUrl=await readFileAsDataUrl(file);
       }
 
-      const file = attachmentInput.files[0] || null;
+      if(isEditMode){
+        const idx=handovers.findIndex(h=>h.id===editingId);
+        if(idx===-1) return;
+        const cur=handovers[idx];
+        if(!canEditHandover(cur)){ alert("You are not allowed to edit this handover."); return; }
 
-      let attachmentName = null;
-      let attachmentType = null;
-      let attachmentSize = null;
-      let attachmentDataUrl = null;
+        const allowActionBy=canEditActionBy(cur);
+        const finalActionBy=allowActionBy?actionBy:uniqueNames(getActionByArray(cur));
 
-      if (isEditMode) {
-        const current = handovers.find(h => h.id === editingId);
-        if (current) {
-          // retain attachment if not changed
-          attachmentName = current.attachmentName || null;
-          attachmentType = current.attachmentType || null;
-          attachmentSize = current.attachmentSize || null;
-          attachmentDataUrl = current.attachmentDataUrl || current.attachmentUrl || null;
-        }
-      }
-
-      if (file) {
-        if (file.size > MAX_ATTACHMENT_SIZE) {
-          alert("Attachment is too large to save in the browser (max ~3MB). Please attach a smaller file.");
-          return;
-        }
-        attachmentName = file.name;
-        attachmentType = file.type || null;
-        attachmentSize = file.size;
-        attachmentDataUrl = await readFileAsDataUrl(file);
-      }
-
-      if (isEditMode) {
-        const idx = handovers.findIndex(h => h.id === editingId);
-        if (idx === -1) return;
-
-        const current = handovers[idx];
-
-        if (!canEditHandover(current)) {
-          alert("You are not allowed to edit this handover.");
-          return;
-        }
-
-        // Only Admin or Creator can change Action By
-        const allowActionBy = canEditActionBy(current);
-        const finalActionBy = allowActionBy ? actionBy : uniqueNames(getActionByArray(current));
-
-        handovers[idx] = {
-          ...current,
-          from,
-          to,
-          items,
-          longDescription,
-          priority,
-          status,
-          date,
-          actionBy: finalActionBy,
-          createdBy: current.createdBy || myName || from,
-          attachmentName,
-          attachmentType,
-          attachmentSize,
-          attachmentDataUrl,
+        handovers[idx]={
+          ...cur, from, to, items, longDescription, priority, status, date,
+          actionBy:finalActionBy,
+          createdBy:cur.createdBy || my || from,
+          attachmentName,attachmentType,attachmentSize,attachmentDataUrl
         };
-      } else {
-        const id = inputId.value;
-
+      }else{
         handovers.push({
-          id,
-          from,
-          to,
-          items,
-          longDescription,
-          priority,
-          status,
-          date,
-          actionBy: uniqueNames(actionBy),
-          createdBy: myName || from,
-          attachmentName,
-          attachmentType,
-          attachmentSize,
-          attachmentDataUrl,
+          id:inputId.value, from, to, items, longDescription, priority, status, date,
+          actionBy:uniqueNames(actionBy),
+          createdBy:my || from,
+          attachmentName,attachmentType,attachmentSize,attachmentDataUrl
         });
       }
 
       saveHandovers();
-      filteredHandovers = getVisibleHandovers(); // refresh visibility immediately
+
+      // After save, refresh:
+      filteredActiveHandovers=getVisibleActiveHandovers();
       applyFilters();
       handoverModal.hide();
-      attachmentInput.value = "";
+      attachmentInput.value="";
     });
   }
 
-  function openEditHandover(id) {
-    const h = handovers.find(x => x.id === id);
-    if (!h) return;
+  function openNewHandover(){
+    const acc=getLoggedInAccount();
+    if(!acc){ alert("You must be logged in to create a handover."); return; }
+    if(acc.status==="Disabled"){ alert("Your account is disabled."); return; }
+    if(acc.role==="Viewer"){ alert("Viewer accounts cannot create handovers."); return; }
 
-    isEditMode = true;
-    editingId = id;
+    isEditMode=false; editingId=null;
+    handoverForm.reset();
+
+    inputId.value=generateNextId();
+    inputDate.value=new Date().toISOString().slice(0,10);
+    currentAttachmentInfo.textContent="No attachment";
+    attachmentInput.value="";
+    inputLongDesc.value="";
+    inputPriority.value="P3";
+    inputStatus.value="Pending";
+
+    refreshUserSelectOptions();
+    setupFromForNewHandover();
+
+    if(users.length>0) inputTo.value=users[0].name;
+
+    includeMyNameCheckbox.checked=true;
+    const my=(acc.employeeName||"").trim();
+    if(my) setMultiSelectValues(inputActionBy,[my]);
+    else if(users.length>0) setMultiSelectValues(inputActionBy,[users[0].name]);
+
+    setHandoverFormPermissions(null);
+    modalTitleEl.textContent="New Handover";
+    handoverModal.show();
+  }
+
+  function openEditHandover(id){
+    const h=handovers.find(x=>x.id===id);
+    if(!h) return;
+
+    isEditMode=true;
+    editingId=id;
 
     handoverForm.reset();
     refreshUserSelectOptions();
 
-    // From is always fixed to original
-    const fromName = h.from || "";
-    inputFrom.innerHTML = "";
-    if (fromName) {
-      const opt = document.createElement("option");
-      opt.value = fromName;
-      opt.textContent = fromName;
-      inputFrom.appendChild(opt);
-      inputFrom.value = fromName;
+    inputFrom.innerHTML="";
+    const fromName=h.from||"";
+    if(fromName){
+      const o=document.createElement("option");
+      o.value=fromName; o.textContent=fromName;
+      inputFrom.appendChild(o);
+      inputFrom.value=fromName;
     }
-    inputFrom.setAttribute("disabled", "disabled");
+    inputFrom.setAttribute("disabled","disabled");
 
-    inputId.value = h.id;
-    inputTo.value = h.to || "";
-    inputItems.value = h.items || "";
-    inputLongDesc.value = h.longDescription || "";
-    inputPriority.value = h.priority || "P3";
-    inputStatus.value = h.status || "Pending";
-    inputDate.value = h.date || "";
+    inputId.value=h.id;
+    inputTo.value=h.to||"";
+    inputItems.value=h.items||"";
+    inputLongDesc.value=h.longDescription||"";
+    inputPriority.value=h.priority||"P3";
+    inputStatus.value=h.status||"Pending";
+    inputDate.value=h.date||"";
 
-    // Set multi-select from existing actionBy
-    const currentActionBy = uniqueNames(getActionByArray(h));
-    setMultiSelectValues(inputActionBy, currentActionBy);
+    const actionBy=uniqueNames(getActionByArray(h));
+    setMultiSelectValues(inputActionBy,actionBy);
 
-    // Set checkbox state (whether my name is included)
-    const acc = getLoggedInAccount();
-    const myName = (acc?.employeeName || "").trim();
-    includeMyNameCheckbox.checked = myName ? currentActionBy.includes(myName) : true;
+    const acc=getLoggedInAccount();
+    const my=(acc?.employeeName||"").trim();
+    includeMyNameCheckbox.checked = my ? actionBy.includes(my) : true;
 
-    attachmentInput.value = "";
-    if (h.attachmentName && (h.attachmentDataUrl || h.attachmentUrl)) {
-      currentAttachmentInfo.textContent = "Current attachment: " + h.attachmentName +
-        (h.attachmentSize ? ` (${Math.round(h.attachmentSize / 1024)} KB)` : "");
-    } else {
-      currentAttachmentInfo.textContent = "No attachment";
+    attachmentInput.value="";
+    if(h.attachmentName && (h.attachmentDataUrl||h.attachmentUrl)){
+      currentAttachmentInfo.textContent="Current attachment: "+h.attachmentName+(h.attachmentSize?` (${Math.round(h.attachmentSize/1024)} KB)`:"");
+    }else{
+      currentAttachmentInfo.textContent="No attachment";
     }
 
-    const editable = canEditHandover(h);
-    editingReadOnly = !editable;
-
-    // Field-level permissions (ActionBy only Admin/Creator)
     setHandoverFormPermissions(h);
-
-    modalTitleEl.textContent = editable ? "Edit Handover" : "View Handover";
+    modalTitleEl.textContent = canEditHandover(h) ? "Edit Handover" : "View Handover";
     handoverModal.show();
   }
 
-  /* =========================
-     Manual resequence (Admin)
-  ========================= */
-  function initResequenceButton() {
-    const btn = document.getElementById("btn-resequence-ids");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can resequence HNDR IDs."); return; }
-
-      const ok = confirm("This will resequence ALL HNDR IDs starting from 0001 based on date (including deleted handovers).\nContinue?");
-      if (!ok) return;
-
+  /* ===== Manual resequence (Admin) ===== */
+  function initResequenceButton(){
+    const btn=document.getElementById("btn-resequence-ids");
+    btn.addEventListener("click",()=>{
+      const acc=getLoggedInAccount();
+      if(!acc||acc.role!=="Admin"){ alert("Only Admin can resequence HNDR IDs."); return; }
+      if(!confirm("This will resequence ALL HNDR IDs starting from 0001 (including deleted handovers).\nContinue?")) return;
       resequenceAllHandoverIdsFromOne();
-      saveHandovers();
-      saveDeletedHandovers();
-
-      filteredHandovers = getVisibleHandovers();
-      renderTable();
+      saveHandovers(); saveDeletedHandovers();
+      filteredActiveHandovers=getVisibleActiveHandovers();
+      applyFilters();
       renderDeletedHandovers();
       alert("HNDR IDs resequenced successfully.");
     });
   }
 
-  /* =========================
-     Login Handling
-  ========================= */
-  function validateLogin(username, password) {
+  /* ===== Login ===== */
+  function validateLogin(username,password){
     normalizeAccountsPasswords();
-    const acc = accounts.find(a => a.username === username);
-    if (!acc) return { ok: false, message: "Invalid username or password." };
-    if (acc.status === "Disabled") return { ok: false, message: "This account is disabled." };
-    if (acc.password !== password) return { ok: false, message: "Invalid username or password." };
-    return { ok: true, account: acc };
+    const acc=accounts.find(a=>a.username===username);
+    if(!acc) return {ok:false,message:"Invalid username or password."};
+    if(acc.status==="Disabled") return {ok:false,message:"This account is disabled."};
+    if(acc.password!==password) return {ok:false,message:"Invalid username or password."};
+    return {ok:true,account:acc};
   }
 
-  function initLogin() {
-    const loginForm = document.getElementById("login-form");
-    const loginUserInput = document.getElementById("login-username");
-    const loginPassInput = document.getElementById("login-password");
-    const loginErrorEl = document.getElementById("login-error");
-    if (!loginForm) return;
+  function initLogin(){
+    const form=document.getElementById("login-form");
+    const u=document.getElementById("login-username");
+    const p=document.getElementById("login-password");
+    const err=document.getElementById("login-error");
 
-    loginForm.addEventListener("submit", e => {
+    form.addEventListener("submit",e=>{
       e.preventDefault();
+      const r=validateLogin(u.value.trim(),p.value);
+      if(!r.ok){ err.textContent=r.message; err.style.display="block"; return; }
+      err.style.display="none";
+      setLoggedInUsername(r.account.username);
 
-      const username = loginUserInput.value.trim();
-      const password = loginPassInput.value;
-
-      const result = validateLogin(username, password);
-      if (!result.ok) {
-        loginErrorEl.textContent = result.message;
-        loginErrorEl.style.display = "block";
-        return;
-      }
-
-      loginErrorEl.style.display = "none";
-      setLoggedInUsername(result.account.username);
-
-      filteredHandovers = getVisibleHandovers();
       showApp();
       renderUsers();
       refreshUserSelectOptions();
       renderAccounts();
-      renderTable();
-      renderReports();
+
+      filteredActiveHandovers=getVisibleActiveHandovers();
+      applyFilters();
       renderDeletedHandovers();
 
-      const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
-      setActiveView(savedView, false);
+      const saved=localStorage.getItem("warehouseActiveView")||"dashboard";
+      setActiveView(saved,false);
     });
 
-    const storedLogin = getLoggedInUsername();
-    if (storedLogin) {
-      const acc = accounts.find(a => a.username === storedLogin && a.status !== "Disabled");
-      if (acc) {
-        filteredHandovers = getVisibleHandovers();
+    const stored=getLoggedInUsername();
+    if(stored){
+      const acc=accounts.find(a=>a.username===stored && a.status!=="Disabled");
+      if(acc){
         showApp();
         renderUsers();
         refreshUserSelectOptions();
         renderAccounts();
-        renderTable();
-        renderReports();
-        renderDeletedHandovers();
-        const savedView = localStorage.getItem("warehouseActiveView") || "dashboard";
-        setActiveView(savedView, false);
-        return;
-      } else {
-        setLoggedInUsername("");
-      }
-    }
 
+        filteredActiveHandovers=getVisibleActiveHandovers();
+        applyFilters();
+        renderDeletedHandovers();
+
+        const saved=localStorage.getItem("warehouseActiveView")||"dashboard";
+        setActiveView(saved,false);
+        return;
+      }
+      setLoggedInUsername("");
+    }
     showLoginPage();
   }
 
-  /* =========================
-     JSON Export/Import (Admin)
-  ========================= */
-  function initExportJson() {
-    const btn = document.getElementById("btn-export-json");
-    if (!btn) return;
+  /* ===== JSON Export/Import (Admin) ===== */
+  function initExportJson(){
+    document.getElementById("btn-export-json").addEventListener("click",()=>{
+      const acc=getLoggedInAccount();
+      if(!acc||acc.role!=="Admin"){ alert("Only Admin can export JSON."); return; }
 
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can export JSON."); return; }
+      const accountsExport=accounts.map(a=>({username:a.username,employeeName:a.employeeName,role:a.role,status:a.status}));
+      const data={exportedAt:new Date().toISOString(),handovers,deletedHandovers,users,accounts:accountsExport};
 
-      // Do not export passwords
-      const accountsExport = accounts.map(a => ({
-        username: a.username,
-        employeeName: a.employeeName,
-        role: a.role,
-        status: a.status,
-      }));
-
-      const data = {
-        exportedAt: new Date().toISOString(),
-        handovers,
-        deletedHandovers,
-        users,
-        accounts: accountsExport,
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `warehouse-data-${new Date().toISOString().slice(0, 10)}.json`;
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=`warehouse-data-${new Date().toISOString().slice(0,10)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2502,113 +1862,96 @@
     });
   }
 
-  function initImportJson() {
-    const btn = document.getElementById("btn-import-json");
-    const input = document.getElementById("import-json-input");
-    if (!btn || !input) return;
+  function initImportJson(){
+    const btn=document.getElementById("btn-import-json");
+    const input=document.getElementById("import-json-input");
 
-    btn.addEventListener("click", () => {
-      const acc = getLoggedInAccount();
-      if (!acc || acc.role !== "Admin") { alert("Only Admin can import JSON."); return; }
+    btn.addEventListener("click",()=>{
+      const acc=getLoggedInAccount();
+      if(!acc||acc.role!=="Admin"){ alert("Only Admin can import JSON."); return; }
       input.click();
     });
 
-    input.addEventListener("change", async e => {
-      const file = e.target.files[0];
-      if (!file) return;
+    input.addEventListener("change",async e=>{
+      const file=e.target.files[0];
+      if(!file) return;
 
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        if (!data || !Array.isArray(data.handovers) || !Array.isArray(data.users) || !Array.isArray(data.accounts)) {
-          alert("Invalid JSON structure. It must contain: handovers, users, and accounts arrays.");
-          input.value = "";
-          return;
+      try{
+        const data=JSON.parse(await file.text());
+        if(!data || !Array.isArray(data.handovers) || !Array.isArray(data.users) || !Array.isArray(data.accounts)){
+          alert("Invalid JSON structure. It must contain: handovers, users, accounts arrays.");
+          input.value=""; return;
         }
+        if(!confirm("This will replace current data in this browser with the imported file.\nContinue?")){ input.value=""; return; }
 
-        const ok = confirm("This will replace current data in this browser with the imported file.\nContinue?");
-        if (!ok) { input.value = ""; return; }
-
-        handovers = data.handovers || [];
-        deletedHandovers = Array.isArray(data.deletedHandovers) ? data.deletedHandovers : [];
-        users = data.users || [];
-        accounts = data.accounts || [];
+        handovers=data.handovers||[];
+        deletedHandovers=Array.isArray(data.deletedHandovers)?data.deletedHandovers:[];
+        users=data.users||[];
+        accounts=data.accounts||[];
 
         normalizeAccountsPasswords();
 
-        handovers.forEach(h => {
-          if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
-          if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
-          if (!Array.isArray(h.actionBy)) h.actionBy = [];
-          h.actionBy = uniqueNames(h.actionBy);
+        handovers.forEach(h=>{
+          if(typeof h.createdBy==="undefined") h.createdBy=h.from||"";
+          if(typeof h.actionBy==="string") h.actionBy=uniqueNames([h.actionBy]);
+          if(!Array.isArray(h.actionBy)) h.actionBy=[];
+          h.actionBy=uniqueNames(h.actionBy);
         });
-
-        deletedHandovers.forEach(h => {
-          if (typeof h.createdBy === "undefined") h.createdBy = h.from || "";
-          if (typeof h.actionBy === "string") h.actionBy = uniqueNames([h.actionBy]);
-          if (!Array.isArray(h.actionBy)) h.actionBy = [];
-          h.actionBy = uniqueNames(h.actionBy);
+        deletedHandovers.forEach(h=>{
+          if(typeof h.createdBy==="undefined") h.createdBy=h.from||"";
+          if(typeof h.actionBy==="string") h.actionBy=uniqueNames([h.actionBy]);
+          if(!Array.isArray(h.actionBy)) h.actionBy=[];
+          h.actionBy=uniqueNames(h.actionBy);
         });
 
         resequenceAllHandoverIdsFromOne();
-        saveHandovers();
-        saveDeletedHandovers();
-        saveUsers();
-        saveAccounts();
+        saveHandovers(); saveDeletedHandovers(); saveUsers(); saveAccounts();
 
-        filteredHandovers = getVisibleHandovers();
         renderUsers();
         refreshUserSelectOptions();
         renderAccounts();
-        renderTable();
-        renderReports();
+
+        filteredActiveHandovers=getVisibleActiveHandovers();
+        applyFilters();
         renderDeletedHandovers();
 
         alert("Data imported successfully.");
-      } catch (err) {
+      }catch(err){
         console.error(err);
         alert("An error occurred while reading or parsing the JSON file.");
-      } finally {
-        input.value = "";
+      }finally{
+        input.value="";
       }
     });
   }
 
-  /* =========================
-     Logout
-  ========================= */
-  function initLogout() {
-    const btn = document.getElementById("btn-logout");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
+  /* ===== Logout ===== */
+  function initLogout(){
+    document.getElementById("btn-logout").addEventListener("click",()=>{
       setLoggedInUsername("");
-      filteredHandovers = [];
-      updateCurrentUserLabel();
-      updateTopbarUser();
+      filteredActiveHandovers=[];
+      updateCurrentUserLabel(); updateTopbarUser();
       showLoginPage();
     });
   }
 
-  /* =========================
-     DOMContentLoaded
-  ========================= */
-  document.addEventListener("DOMContentLoaded", () => {
-    // Filters
-    document.getElementById("filter-from").addEventListener("change", applyFilters);
-    document.getElementById("filter-to").addEventListener("change", applyFilters);
-    document.getElementById("filter-status").addEventListener("change", applyFilters);
-    document.getElementById("filter-priority").addEventListener("change", applyFilters);
-    document.getElementById("filter-date-from").addEventListener("change", applyFilters);
-    document.getElementById("filter-date-to").addEventListener("change", applyFilters);
-    document.getElementById("filter-search").addEventListener("input", applyFilters);
-    document.getElementById("btn-reset-filters").addEventListener("click", resetFilters);
+  /* ===== Export Excel button ===== */
+  function initExportExcel(){
+    document.getElementById("btn-export-excel").addEventListener("click",exportHandoverExcel);
+  }
 
-    // Excel export
-    document.getElementById("btn-export-excel").addEventListener("click", exportHandoverExcel);
+  /* ===== DOM Ready ===== */
+  document.addEventListener("DOMContentLoaded",()=>{
+    // Filters events
+    document.getElementById("filter-from").addEventListener("change",applyFilters);
+    document.getElementById("filter-to").addEventListener("change",applyFilters);
+    document.getElementById("filter-status").addEventListener("change",applyFilters);
+    document.getElementById("filter-priority").addEventListener("change",applyFilters);
+    document.getElementById("filter-date-from").addEventListener("change",applyFilters);
+    document.getElementById("filter-date-to").addEventListener("change",applyFilters);
+    document.getElementById("filter-search").addEventListener("input",applyFilters);
+    document.getElementById("btn-reset-filters").addEventListener("click",resetFilters);
 
-    // Load data
     loadUsers();
     loadHandovers();
     loadDeletedHandovers();
@@ -2620,7 +1963,6 @@
 
     loadAccounts();
 
-    // Init UI
     initSidebarNavigation();
     initUserForm();
     initUserModal();
@@ -2628,7 +1970,6 @@
 
     initHandoverModal();
     initAccountModal();
-
     refreshUserSelectOptions();
     renderAccounts();
 
@@ -2636,12 +1977,13 @@
     initImportJson();
     initLogout();
     initResequenceButton();
-
-    // Login
-    initLogin();
+    initExportExcel();
 
     // Deleted list
     renderDeletedHandovers();
+
+    // Login
+    initLogin();
   });
 </script>
 </body>
